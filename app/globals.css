@@ -1,0 +1,213 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+@custom-variant pwa (&:is(.pwa-mode *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-sans);
+  --color-ingreso: var(--ingreso);
+  --color-egreso: var(--egreso);
+  --color-advertencia: var(--advertencia);
+  --color-tinta: var(--tinta);
+  --color-tinta-oscuro: var(--tinta-oscuro);
+  --color-tinta-foreground: var(--tinta-foreground);
+  --color-cobre: var(--cobre);
+  --color-cobre-foreground: var(--cobre-foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* RESET 2026-07-06: sin marca todavía. Neutral zinc de shadcn, a la espera
+   de una nueva dirección visual consensuada con el usuario (ver
+   diseno.md/diseno-pwa.md, ambos en blanco). No reintroducir colores propios
+   acá sin acordarlo antes. */
+:root {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #18181b;
+  --ingreso: #16a34a;
+  --egreso: #dc2626;
+  --advertencia: #d97706;
+  --tinta: #27272a;
+  --tinta-oscuro: #09090b;
+  --tinta-foreground: #fafafa;
+  --cobre: #71717a;
+  --cobre-foreground: #ffffff;
+  --chart-1: #18181b;
+  --chart-2: #71717a;
+  --chart-3: #a1a1aa;
+  --chart-4: #dc2626;
+  --chart-5: #d97706;
+  --radius: 0.625rem;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #09090b;
+  --sidebar-primary: #18181b;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #09090b;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #18181b;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --destructive: #f87171;
+  --destructive-foreground: #18181b;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #d4d4d8;
+  --ingreso: #4ade80;
+  --egreso: #f87171;
+  --advertencia: #fbbf24;
+  --tinta: #18181b;
+  --tinta-oscuro: #09090b;
+  --tinta-foreground: #fafafa;
+  --cobre: #a1a1aa;
+  --cobre-foreground: #09090b;
+  --chart-1: #fafafa;
+  --chart-2: #a1a1aa;
+  --chart-3: #71717a;
+  --chart-4: #f87171;
+  --chart-5: #fbbf24;
+  --sidebar: #18181b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #fafafa;
+  --sidebar-primary-foreground: #18181b;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #27272a;
+  --sidebar-ring: #d4d4d8;
+}
+
+/* PWA: sistema de tokens INDEPENDIENTE del de la web (no es un override
+   parcial de :root) — a propósito, para que nunca dependa de "acordarse"
+   de pisar cada token web. Paleta verde esmeralda confirmada 2026-07-06
+   a partir del mockup de Inicio (admin_organizacion); tokens sin
+   evidencia todavía en ningún mockup (--tinta*, --cobre*) quedan
+   neutros hasta la próxima pantalla. */
+.pwa-mode {
+  --background: #f9fafb;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --primary: #006d36;
+  --primary-foreground: #ffffff;
+  --secondary: #eef9ec;
+  --secondary-foreground: #15803d;
+  --muted: #f3f4f6;
+  --muted-foreground: #9ca3af;
+  --accent: #eef9ec;
+  --accent-foreground: #15803d;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #f3f4f6;
+  --input: #f3f4f6;
+  --ring: #006d36;
+  --ingreso: #50c878;
+  --egreso: #ef4444;
+  --advertencia: #d97706;
+  --tinta: #27272a;
+  --tinta-oscuro: #09090b;
+  --tinta-foreground: #fafafa;
+  --cobre: #71717a;
+  --cobre-foreground: #ffffff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-semibold;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}

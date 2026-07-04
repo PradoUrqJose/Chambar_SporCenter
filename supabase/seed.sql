@@ -5,18 +5,18 @@
 -- `supabase db push`, así que producción nace limpia.
 -- ============================================================
 
--- Empresas ficticias
+-- Empresas ficticias (el trigger empresas_crear_caja les crea su caja
+-- de empresa automáticamente; la caja de organización nace por la
+-- migración de reestructuración, no hace falta sembrarla aquí)
 insert into public.empresas (id, nombre, ruc, color) values
   ('11111111-1111-1111-1111-111111111111', 'Empresa Demo Uno', '20100000001', '#0ea5e9'),
   ('22222222-2222-2222-2222-222222222222', 'Empresa Demo Dos', '20100000002', '#f59e0b');
 
--- Cajas: cada empresa con su caja central y sus stands
-insert into public.cajas (id, empresa_id, nombre, tipo) values
-  ('aaaa1111-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Caja Central Uno', 'central'),
-  ('aaaa1111-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'Stand Plaza Norte', 'stand'),
-  ('aaaa1111-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'Stand Mega Plaza',  'stand'),
-  ('bbbb2222-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'Caja Central Dos', 'central'),
-  ('bbbb2222-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', 'Stand Jockey',     'stand');
+-- Stands: registrados bajo cada empresa, sin caja propia
+insert into public.stands (id, empresa_id, nombre) values
+  ('aaaa1111-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'Stand Plaza Norte'),
+  ('aaaa1111-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'Stand Mega Plaza'),
+  ('bbbb2222-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', 'Stand Jockey');
 
 -- Categorías de PRUEBA (el catálogo real de producción empieza vacío
 -- y lo crea el admin desde el panel)
