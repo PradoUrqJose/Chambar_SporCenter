@@ -49,16 +49,12 @@ export function CajaDetalleAdminOrganizacion({ caja, flujoSemanal, movimientos, 
   return (
     <div className="flex flex-col">
       {nombreUsuario ? (
-        <header className="flex items-start justify-between px-6 pt-12">
+        <header className="flex items-start justify-between px-6 pt-12 mb-8">
           <div>
             <h1 className="text-3xl leading-tight font-bold text-gray-800">Hola,</h1>
             <h1 className="text-3xl leading-tight font-bold text-gray-800">{nombreUsuario}</h1>
           </div>
-          <Link
-            href="/historial?buscar=1"
-            aria-label="Buscar movimientos"
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-100 bg-white shadow-sm"
-          >
+          <Link href="/historial?buscar=1" aria-label="Buscar movimientos" className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-100 bg-white shadow-sm">
             <SearchIcon className="h-5 w-5 text-gray-600" />
           </Link>
         </header>
@@ -89,11 +85,7 @@ export function CajaDetalleAdminOrganizacion({ caja, flujoSemanal, movimientos, 
             </h2>
             <div className="mb-4 flex items-center gap-2">
               <p className="text-xs font-medium text-white/50">
-                {estadoDia === "abierta"
-                  ? "Saldo actual"
-                  : estadoDia === "cerrada"
-                    ? `Cerrada el ${formatearFecha(diaSeleccionado)}`
-                    : `Sin sesión el ${formatearFecha(diaSeleccionado)}`}
+                {estadoDia === "abierta" ? "Saldo actual" : estadoDia === "cerrada" ? `Cerrada el ${formatearFecha(diaSeleccionado)}` : `Sin sesión el ${formatearFecha(diaSeleccionado)}`}
               </p>
               {selloDia && selloDia.label !== "Cuadrada" && (
                 <span className="rounded-full bg-white px-2 py-0.5 text-[9px] font-black uppercase" style={{ color: selloDia.color }}>
@@ -142,19 +134,11 @@ export function CajaDetalleAdminOrganizacion({ caja, flujoSemanal, movimientos, 
 
         <SheetAbrirCerrarCaja cajaId={caja.cajaId} sesionAbiertaId={caja.sesionAbiertaId} abierta={caja.abierta} montoReferencia={caja.saldo} color={color} />
 
-        <SheetRegistrarMovimiento
-          cajaId={caja.cajaId}
-          categoriasIngreso={categoriasIngreso}
-          categoriasEgreso={categoriasEgreso}
-          deshabilitado={!caja.abierta}
-          prefill={prefillMovimiento}
-        />
+        <SheetRegistrarMovimiento cajaId={caja.cajaId} categoriasIngreso={categoriasIngreso} categoriasEgreso={categoriasEgreso} deshabilitado={!caja.abierta} prefill={prefillMovimiento} />
       </section>
 
       <section className="flex flex-col gap-6 px-8 pb-8">
-        <h3 className="text-sm font-medium text-gray-400">
-          {esHoySeleccionado ? "Movimientos de hoy" : `Movimientos del ${formatearFecha(diaSeleccionado)}`}
-        </h3>
+        <h3 className="text-sm font-medium text-gray-400">{esHoySeleccionado ? "Movimientos de hoy" : `Movimientos del ${formatearFecha(diaSeleccionado)}`}</h3>
 
         {movimientosDelDia.length === 0 && <p className="text-sm text-gray-400">No hay movimientos ese día.</p>}
 
@@ -166,17 +150,9 @@ export function CajaDetalleAdminOrganizacion({ caja, flujoSemanal, movimientos, 
           const monto = formatearMontoPartes(movimiento.monto);
 
           return (
-            <button
-              key={movimiento.id}
-              type="button"
-              onClick={() => setMovimientoSeleccionado(movimiento)}
-              className="flex w-full items-center justify-between text-left active:opacity-70"
-            >
+            <button key={movimiento.id} type="button" onClick={() => setMovimientoSeleccionado(movimiento)} className="flex w-full items-center justify-between text-left active:opacity-70">
               <div className="flex items-center gap-4">
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-2xl"
-                  style={{ backgroundColor: colorConAlpha(colorCategoria, 0.12), color: colorCategoria }}
-                >
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ backgroundColor: colorConAlpha(colorCategoria, 0.12), color: colorCategoria }}>
                   <Icono className="h-5 w-5" />
                 </div>
                 <div>

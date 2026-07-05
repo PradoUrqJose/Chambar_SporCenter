@@ -1,6 +1,15 @@
 import { obtenerPerfilActual } from "@/lib/perfil";
-import { obtenerAlertasArqueo, obtenerCajasEmpresas, obtenerFlujoSemanal, obtenerMovimientosHoy, obtenerSaldoConsolidado } from "@/lib/consultas";
+import {
+  obtenerAlertasArqueo,
+  obtenerCajasEmpresas,
+  obtenerEmpresasConConteo,
+  obtenerFlujoSemanal,
+  obtenerMovimientosHoy,
+  obtenerResumenOrganizacion,
+  obtenerSaldoConsolidado,
+} from "@/lib/consultas";
 import { InicioAdminOrganizacion } from "@/components/pwa/admin-organizacion/inicio";
+import { InicioAdminGeneral } from "@/components/pwa/admin-general/inicio";
 
 export default async function InicioPage() {
   const perfil = await obtenerPerfilActual();
@@ -24,6 +33,12 @@ export default async function InicioPage() {
         alertasArqueo={alertasArqueo}
       />
     );
+  }
+
+  if (perfil?.rol_global === "admin_general") {
+    const [resumen, empresas] = await Promise.all([obtenerResumenOrganizacion(), obtenerEmpresasConConteo()]);
+
+    return <InicioAdminGeneral nombreUsuario={perfil.nombre} resumen={resumen} empresas={empresas} />;
   }
 
   return (

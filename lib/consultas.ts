@@ -511,6 +511,67 @@ export async function obtenerUsuarios(): Promise<UsuarioAdmin[]> {
   }));
 }
 
+export type ResumenOrganizacion = {
+  empresasActivas: number;
+  usuariosTotales: number;
+  standsActivos: number;
+};
+
+export async function obtenerResumenOrganizacion(): Promise<ResumenOrganizacion> {
+  const supabase = await createClient();
+
+  const [{ count: empresasActivas }, { count: usuariosTotales }, { count: standsActivos }] = await Promise.all([
+    supabase.from("empresas").select("id", { count: "exact", head: true }).eq("activa", true),
+    supabase.from("perfiles").select("id", { count: "exact", head: true }),
+    supabase.from("stands").select("id", { count: "exact", head: true }).eq("activo", true),
+  ]);
+
+  return {
+    empresasActivas: empresasActivas ?? 0,
+    usuariosTotales: usuariosTotales ?? 0,
+    standsActivos: standsActivos ?? 0,
+  };
+}
+
+export type EmpresaResumen = {
+  id: string;
+  nombre: string;
+  color: string | null;
+  standsCount: number;
+  usuariosCount: number;
+};
+
+// Conteos calculados en el cliente (no una vista) porque son dos relaciones
+// independientes (stands, asignaciones) sobre la misma empresa: un solo
+// count() embebido de Supabase no puede traer ambos a la vez.
+export async function obtenerEmpresasConConteo(): Promise<EmpresaResumen[]> {
+  const supabase = await createClient();
+
+  const [{ data: empresas }, { data: stands }, { data: asignaciones }] = await Promise.all([
+    supabase.from("empresas").select("id, nombre, color").eq("activa", true).order("nombre"),
+    supabase.from("stands").select("empresa_id").eq("activo", true),
+    supabase.from("asignaciones").select("empresa_id"),
+  ]);
+
+  const standsPorEmpresa = new Map<string, number>();
+  for (const stand of stands ?? []) {
+    standsPorEmpresa.set(stand.empresa_id, (standsPorEmpresa.get(stand.empresa_id) ?? 0) + 1);
+  }
+
+  const usuariosPorEmpresa = new Map<string, number>();
+  for (const asignacion of asignaciones ?? []) {
+    usuariosPorEmpresa.set(asignacion.empresa_id, (usuariosPorEmpresa.get(asignacion.empresa_id) ?? 0) + 1);
+  }
+
+  return (empresas ?? []).map((empresa) => ({
+    id: empresa.id,
+    nombre: empresa.nombre,
+    color: empresa.color,
+    standsCount: standsPorEmpresa.get(empresa.id) ?? 0,
+    usuariosCount: usuariosPorEmpresa.get(empresa.id) ?? 0,
+  }));
+}
+
 export type CategoriaOpcion = { id: string; nombre: string; icono: string | null; color: string | null };
 
 export async function obtenerCategoriasPorTipo(tipo: "ingreso" | "egreso"): Promise<CategoriaOpcion[]> {
