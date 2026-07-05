@@ -6,5 +6,7 @@ export default async function Home() {
 
   if (!perfil) redirect("/login");
 
-  redirect("/inicio");
+  // El encargado de empresa no tiene dashboard propio (ver bottom-nav.tsx) —
+  // su pantalla principal es directamente su caja.
+  redirect(perfil.rol_global === null ? "/caja" : "/inicio");
 }

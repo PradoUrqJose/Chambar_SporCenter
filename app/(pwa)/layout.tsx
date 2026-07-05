@@ -10,7 +10,7 @@ export default async function PwaLayout({ children }: { children: React.ReactNod
   return (
     <div className="pt-safe flex min-h-screen flex-col">
       <main className="flex-1 pb-28">{children}</main>
-      <BottomNav />
+      <BottomNav rol={perfil.rol_global} />
     </div>
   );
 }
