@@ -1,8 +1,9 @@
 import { cache } from "react";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import type { RolGlobal } from "@/lib/roles";
 
-export type RolGlobal = "admin_general" | "admin_organizacion" | null;
+export type { RolGlobal } from "@/lib/roles";
 
 export type Perfil = {
   id: string;
