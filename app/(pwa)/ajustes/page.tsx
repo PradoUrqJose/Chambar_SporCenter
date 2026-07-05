@@ -1,10 +1,11 @@
-import { BotonCerrarSesion } from "@/components/boton-cerrar-sesion";
+import { redirect } from "next/navigation";
+import { obtenerPerfilActual } from "@/lib/perfil";
+import { Ajustes } from "@/components/pwa/ajustes";
 
-export default function AjustesPage() {
-  return (
-    <main className="flex flex-col gap-4 p-6">
-      <h1 className="text-xl font-semibold">Ajustes</h1>
-      <BotonCerrarSesion />
-    </main>
-  );
+export default async function AjustesPage() {
+  const perfil = await obtenerPerfilActual();
+
+  if (!perfil) redirect("/login");
+
+  return <Ajustes perfil={perfil} />;
 }

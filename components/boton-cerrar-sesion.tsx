@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { LogOutIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
 
 export function BotonCerrarSesion() {
   const router = useRouter();
@@ -15,8 +15,13 @@ export function BotonCerrarSesion() {
   }
 
   return (
-    <Button variant="destructive" size="sm" onClick={cerrarSesion}>
+    <button
+      type="button"
+      onClick={cerrarSesion}
+      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 py-3.5 text-sm font-bold text-red-600"
+    >
+      <LogOutIcon className="h-4 w-4" />
       Cerrar sesión
-    </Button>
+    </button>
   );
 }
