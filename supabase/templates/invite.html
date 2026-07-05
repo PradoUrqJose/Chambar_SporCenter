@@ -1,0 +1,62 @@
+<!-- Plantilla "Invite user" — Supabase Auth Email Templates. Pegar tal cual en el HTML source. -->
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">Te invitaron a SCBox — acepta la invitación para crear tu cuenta.</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;background-color:#ffffff;border-radius:16px;overflow:hidden;">
+
+        <!-- Header con marca -->
+        <tr>
+          <td style="background-color:#006d36;padding:28px 32px;text-align:center;">
+            <span style="color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:0.5px;">SCBox</span>
+          </td>
+        </tr>
+
+        <!-- Cuerpo -->
+        <tr>
+          <td style="padding:32px;">
+            <p style="margin:0 0 16px;font-size:16px;line-height:24px;color:#111827;">
+              Hola 👋
+            </p>
+            <p style="margin:0 0 24px;font-size:15px;line-height:23px;color:#4b5563;">
+              Te invitaron a SCBox para administrar el control de caja de tu organización.
+              Acepta la invitación y crea tu contraseña para empezar.
+            </p>
+
+            <!-- Botón -->
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
+              <tr>
+                <td style="background-color:#006d36;border-radius:12px;">
+                  <a
+                    href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=invite&amp;next=/actualizar-password"
+                    style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:12px;"
+                  >
+                    Aceptar invitación
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 4px;font-size:13px;line-height:20px;color:#9ca3af;">
+              Si el botón no funciona, copia y pega este enlace en tu navegador:
+            </p>
+            <p style="margin:0;font-size:12px;line-height:18px;color:#006d36;word-break:break-all;">
+              {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=invite&amp;next=/actualizar-password
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:20px 32px;background-color:#f9fafb;text-align:center;">
+            <p style="margin:0;font-size:12px;line-height:18px;color:#9ca3af;">
+              Si no esperabas esta invitación, puedes ignorar este correo.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
