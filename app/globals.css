@@ -57,30 +57,33 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* RESET 2026-07-06: sin marca todavía. Neutral zinc de shadcn, a la espera
-   de una nueva dirección visual consensuada con el usuario (ver
-   diseno.md/diseno-pwa.md, ambos en blanco). No reintroducir colores propios
-   acá sin acordarlo antes. */
+/* Paleta web confirmada 2026-07-06 a partir del mockup de shell (sidebar +
+   topbar, kit "Donezo" de referencia). Colores tomados literal del mockup
+   (verde propio de la web, distinto del esmeralda #006d36 de la PWA — cada
+   una es su propio bloque de tokens, ver arquitectura). Tokens sin evidencia
+   todavía en ningún mockup de la web (--destructive, --ingreso, --egreso,
+   --advertencia, --tinta*, --cobre*, --chart-*) quedan neutros: no inventar
+   valores para esos hasta que aparezcan en otra pantalla. */
 :root {
-  --background: #ffffff;
-  --foreground: #09090b;
+  --background: #e9eaec;
+  --foreground: #1c1f23;
   --card: #ffffff;
-  --card-foreground: #09090b;
+  --card-foreground: #1c1f23;
   --popover: #ffffff;
-  --popover-foreground: #09090b;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
+  --popover-foreground: #1c1f23;
+  --primary: #1f7a4d;
+  --primary-foreground: #ffffff;
+  --secondary: #e8f3ee;
+  --secondary-foreground: #1f7a4d;
+  --muted: #f4f5f6;
+  --muted-foreground: #8a9099;
+  --accent: #f4f5f6;
+  --accent-foreground: #1c1f23;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #18181b;
+  --border: #eceef0;
+  --input: #eceef0;
+  --ring: #4ea87a;
   --ingreso: #16a34a;
   --egreso: #dc2626;
   --advertencia: #d97706;
@@ -89,20 +92,20 @@
   --tinta-foreground: #fafafa;
   --cobre: #71717a;
   --cobre-foreground: #ffffff;
-  --chart-1: #18181b;
+  --chart-1: #1f7a4d;
   --chart-2: #71717a;
   --chart-3: #a1a1aa;
   --chart-4: #dc2626;
   --chart-5: #d97706;
   --radius: 0.625rem;
-  --sidebar: #fafafa;
-  --sidebar-foreground: #09090b;
-  --sidebar-primary: #18181b;
-  --sidebar-primary-foreground: #fafafa;
-  --sidebar-accent: #f4f4f5;
-  --sidebar-accent-foreground: #09090b;
-  --sidebar-border: #e4e4e7;
-  --sidebar-ring: #18181b;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1c1f23;
+  --sidebar-primary: #1f7a4d;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8f3ee;
+  --sidebar-accent-foreground: #1f7a4d;
+  --sidebar-border: #eceef0;
+  --sidebar-ring: #4ea87a;
 }
 
 .dark {
@@ -209,5 +212,22 @@
   }
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Brillo del número destacado en la stat card hero del dashboard web
+   (components/web/admin-general/inicio.tsx) — mismo efecto que el mockup. */
+@keyframes bloom {
+  from {
+    text-shadow:
+      0 0 20px rgba(46, 204, 113, 0.4),
+      0 0 40px rgba(46, 204, 113, 0.2),
+      0 0 60px rgba(46, 204, 113, 0.1);
+  }
+  to {
+    text-shadow:
+      0 0 24px rgba(46, 204, 113, 0.7),
+      0 0 48px rgba(46, 204, 113, 0.35),
+      0 0 72px rgba(46, 204, 113, 0.18);
   }
 }

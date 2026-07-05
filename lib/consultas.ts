@@ -140,6 +140,7 @@ export async function obtenerSesionesSemana(cajaId: string): Promise<SesionDia[]
 
 export type CajaEmpresa = {
   empresaId: string;
+  cajaId: string | null;
   nombre: string;
   color: string | null;
   saldo: number;
@@ -151,7 +152,7 @@ export async function obtenerCajasEmpresas(): Promise<CajaEmpresa[]> {
 
   const [{ data: empresas }, { data: saldos }] = await Promise.all([
     supabase.from("empresas").select("id, nombre, color").eq("activa", true).order("nombre"),
-    supabase.from("saldos_cajas").select("empresa_id, saldo, abierta").eq("tipo", "empresa"),
+    supabase.from("saldos_cajas").select("caja_id, empresa_id, saldo, abierta").eq("tipo", "empresa"),
   ]);
 
   const saldoPorEmpresa = new Map((saldos ?? []).map((fila) => [fila.empresa_id, fila]));
@@ -160,6 +161,7 @@ export async function obtenerCajasEmpresas(): Promise<CajaEmpresa[]> {
     const saldo = saldoPorEmpresa.get(empresa.id);
     return {
       empresaId: empresa.id,
+      cajaId: saldo?.caja_id ?? null,
       nombre: empresa.nombre,
       color: empresa.color,
       saldo: Number(saldo?.saldo ?? 0),
@@ -255,6 +257,25 @@ export async function obtenerMovimientosSemana(cajaId: string): Promise<Movimien
     categoriaIcono: movimiento.categorias?.icono ?? null,
     categoriaColor: movimiento.categorias?.color ?? null,
   }));
+}
+
+// El bucket "comprobantes" es privado — a diferencia del sheet de detalle en
+// la PWA (que pide la URL firmada bajo demanda, 60s, justo al tocar "Ver"),
+// acá se generan de una para toda una tabla renderizada en el servidor, por
+// eso la expiración es más larga (1 hora: alcanza para que el usuario abra
+// el enlace mientras tiene la página abierta).
+export async function obtenerUrlsComprobantes(rutas: string[]): Promise<Map<string, string>> {
+  const rutasUnicas = Array.from(new Set(rutas));
+  if (rutasUnicas.length === 0) return new Map();
+
+  const supabase = await createClient();
+  const { data } = await supabase.storage.from("comprobantes").createSignedUrls(rutasUnicas, 3600);
+
+  const mapa = new Map<string, string>();
+  for (const fila of data ?? []) {
+    if (fila.signedUrl && !fila.error) mapa.set(fila.path ?? "", fila.signedUrl);
+  }
+  return mapa;
 }
 
 export type AlertaArqueo = {
