@@ -9,6 +9,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { obtenerIcono } from "@/lib/iconos";
 import type { CategoriaOpcion } from "@/lib/consultas";
+import type { PrefillMovimiento } from "@/components/pwa/sheet-detalle-movimiento";
 
 type Modo = "ingreso" | "egreso";
 
@@ -17,6 +18,10 @@ type Props = {
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
   deshabilitado?: boolean;
+  // Cuando otro componente (ej. "Anular y registrar de nuevo") necesita abrir
+  // este sheet ya precargado, en vez de esperar a que el usuario toque
+  // Ingreso/Gasto: cada objeto nuevo (por referencia) reabre con esos datos.
+  prefill?: PrefillMovimiento | null;
 };
 
 const TEMAS: Record<Modo, { label: string; accent: string; suave: string; gradiente: string }> = {
@@ -24,7 +29,7 @@ const TEMAS: Record<Modo, { label: string; accent: string; suave: string; gradie
   egreso: { label: "Gasto", accent: "#E7000B", suave: "#FEF2F2", gradiente: "linear-gradient(135deg, #E7000B, #7f1d1d)" },
 };
 
-export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categoriasEgreso, deshabilitado }: Props) {
+export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categoriasEgreso, deshabilitado, prefill }: Props) {
   const [abierto, setAbierto] = useState(false);
   const [modo, setModo] = useState<Modo>("egreso");
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
@@ -33,6 +38,16 @@ export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categorias
   const [comprobante, setComprobante] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!prefill) return;
+    setModo(prefill.tipo);
+    setCategoriaId(prefill.categoriaId);
+    setMonto(String(prefill.monto));
+    setDescripcion(prefill.descripcion ?? "");
+    setComprobante(null);
+    setAbierto(true);
+  }, [prefill]);
 
   const categoriasPorModo: Record<Modo, CategoriaOpcion[]> = { ingreso: categoriasIngreso, egreso: categoriasEgreso };
   const categorias = categoriasPorModo[modo];
