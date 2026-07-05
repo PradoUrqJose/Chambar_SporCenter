@@ -1,5 +1,11 @@
-import { PlaceholderPanel } from "@/components/web/placeholder-panel";
+import { redirect } from "next/navigation";
+import { obtenerPerfilActual } from "@/lib/perfil";
+import { AjustesWeb } from "@/components/web/ajustes";
 
-export default function AjustesPanelPage() {
-  return <PlaceholderPanel titulo="Ajustes" descripcion="Acá va el contenido de Ajustes." />;
+export default async function AjustesPanelPage() {
+  const perfil = await obtenerPerfilActual();
+
+  if (!perfil) redirect("/login");
+
+  return <AjustesWeb perfil={perfil} />;
 }

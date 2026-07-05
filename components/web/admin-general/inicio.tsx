@@ -63,18 +63,19 @@ export function InicioAdminGeneral({
 
   return (
     <div>
-      <div className="mb-[22px]">
-        <h1 className="text-[32px] font-extrabold">Inicio</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Resumen general de la organización.</p>
-      </div>
-
       <div className="mb-[18px] grid grid-cols-6 gap-[18px] max-[1100px]:grid-cols-1">
-        <section className="relative col-span-3 overflow-hidden rounded-[26px] p-8 text-white max-[1100px]:col-span-1" style={{ background: "linear-gradient(150deg, #2b8a58, #175236)" }}>
+        <section
+          className="relative col-span-3 overflow-hidden rounded-[26px] p-8 text-white max-[1100px]:col-span-1"
+          style={{
+            background:
+              "radial-gradient(130% 160% at 15% -20%, rgba(255,255,255,0.22), transparent 55%), linear-gradient(135deg, #1f7a4d 0%, #0a2417 100%)",
+          }}
+        >
           <div
             className="pointer-events-none absolute inset-0 opacity-10"
             style={{
-              backgroundImage:
-                "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')",
+              backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
+              backgroundSize: "12px 12px",
             }}
           />
           <div className="relative z-10">

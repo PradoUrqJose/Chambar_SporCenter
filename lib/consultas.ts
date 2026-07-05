@@ -12,12 +12,12 @@ const formateadorFecha = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
-function fechaLima(offsetDias = 0): string {
+export function fechaLima(offsetDias = 0): string {
   const fecha = new Date(Date.now() + offsetDias * 24 * 60 * 60 * 1000);
   return formateadorFecha.format(fecha);
 }
 
-function limitesDelDia(fechaISO: string) {
+export function limitesDelDia(fechaISO: string) {
   return {
     inicio: `${fechaISO}T00:00:00${OFFSET_LIMA}`,
     fin: `${fechaISO}T23:59:59.999${OFFSET_LIMA}`,
@@ -383,18 +383,26 @@ export type SesionHistorial = {
   montoContado: number;
   montoEsperado: number;
   diferencia: number;
+  abiertaPor: string | null;
+  cerradaPor: string | null;
 };
 
-export async function obtenerSesionesCerradas(cajaId?: string): Promise<SesionHistorial[]> {
+export type RangoFechas = { desde?: string; hasta?: string };
+
+export async function obtenerSesionesCerradas(cajaId?: string, rango?: RangoFechas): Promise<SesionHistorial[]> {
   const supabase = await createClient();
 
   let consulta = supabase
     .from("sesiones_caja")
-    .select("id, caja_id, apertura_at, cierre_at, monto_apertura, monto_contado, monto_esperado, diferencia, cajas(nombre, empresas(color))")
+    .select(
+      "id, caja_id, apertura_at, cierre_at, monto_apertura, monto_contado, monto_esperado, diferencia, cajas(nombre, empresas(color)), abierta_por:perfiles!abierta_por(nombre), cerrada_por:perfiles!cerrada_por(nombre)",
+    )
     .not("cierre_at", "is", null)
     .order("cierre_at", { ascending: false });
 
   if (cajaId) consulta = consulta.eq("caja_id", cajaId);
+  if (rango?.desde) consulta = consulta.gte("cierre_at", rango.desde);
+  if (rango?.hasta) consulta = consulta.lte("cierre_at", rango.hasta);
 
   const { data } = await consulta;
 
@@ -409,7 +417,47 @@ export async function obtenerSesionesCerradas(cajaId?: string): Promise<SesionHi
     montoContado: Number(sesion.monto_contado),
     montoEsperado: Number(sesion.monto_esperado),
     diferencia: Number(sesion.diferencia),
+    abiertaPor: sesion.abierta_por?.nombre ?? null,
+    cerradaPor: sesion.cerrada_por?.nombre ?? null,
   }));
+}
+
+export type ResumenHistorial = {
+  sesionesCerradas: number;
+  sesionesDescuadradas: number;
+  movimientosAnulados: number;
+  diferenciaNeta: number;
+};
+
+export async function obtenerResumenHistorial(cajaId?: string, rango?: RangoFechas): Promise<ResumenHistorial> {
+  const supabase = await createClient();
+
+  let consultaSesiones = supabase.from("sesiones_caja").select("diferencia").not("cierre_at", "is", null);
+  let consultaAnulados = supabase.from("movimientos").select("id", { count: "exact", head: true }).not("anulado_at", "is", null);
+
+  if (cajaId) {
+    consultaSesiones = consultaSesiones.eq("caja_id", cajaId);
+    consultaAnulados = consultaAnulados.eq("caja_id", cajaId);
+  }
+  if (rango?.desde) {
+    consultaSesiones = consultaSesiones.gte("cierre_at", rango.desde);
+    consultaAnulados = consultaAnulados.gte("fecha", rango.desde);
+  }
+  if (rango?.hasta) {
+    consultaSesiones = consultaSesiones.lte("cierre_at", rango.hasta);
+    consultaAnulados = consultaAnulados.lte("fecha", rango.hasta);
+  }
+
+  const [{ data: sesiones }, { count: movimientosAnulados }] = await Promise.all([consultaSesiones, consultaAnulados]);
+
+  const diferencias = (sesiones ?? []).map((sesion) => Number(sesion.diferencia));
+
+  return {
+    sesionesCerradas: diferencias.length,
+    sesionesDescuadradas: diferencias.filter((diferencia) => Math.abs(diferencia) >= 0.005).length,
+    movimientosAnulados: movimientosAnulados ?? 0,
+    diferenciaNeta: diferencias.reduce((total, diferencia) => total + diferencia, 0),
+  };
 }
 
 export type MovimientoLibroMayor = {
@@ -418,9 +466,13 @@ export type MovimientoLibroMayor = {
   monto: number;
   fecha: string;
   categoriaNombre: string | null;
+  categoriaIcono: string | null;
+  categoriaColor: string | null;
   descripcion: string | null;
   anulado: boolean;
   motivoAnulacion: string | null;
+  anuladoPor: string | null;
+  comprobanteUrl: string | null;
   transferenciaId: string | null;
 };
 
@@ -437,6 +489,8 @@ export type SesionDetalle = {
   diferencia: number | null;
   observacionesApertura: string | null;
   observacionesCierre: string | null;
+  abiertaPor: string | null;
+  cerradaPor: string | null;
   movimientos: MovimientoLibroMayor[];
 };
 
@@ -447,13 +501,15 @@ export async function obtenerSesionDetalle(sesionId: string): Promise<SesionDeta
     supabase
       .from("sesiones_caja")
       .select(
-        "id, caja_id, apertura_at, cierre_at, monto_apertura, monto_contado, monto_esperado, diferencia, observaciones_apertura, observaciones_cierre, cajas(nombre, empresas(color))",
+        "id, caja_id, apertura_at, cierre_at, monto_apertura, monto_contado, monto_esperado, diferencia, observaciones_apertura, observaciones_cierre, cajas(nombre, empresas(color)), abierta_por:perfiles!abierta_por(nombre), cerrada_por:perfiles!cerrada_por(nombre)",
       )
       .eq("id", sesionId)
       .single(),
     supabase
       .from("movimientos")
-      .select("id, tipo, monto, fecha, descripcion, anulado_at, motivo_anulacion, transferencia_id, categorias(nombre)")
+      .select(
+        "id, tipo, monto, fecha, descripcion, comprobante_url, anulado_at, motivo_anulacion, transferencia_id, categorias(nombre, icono, color), anulado_por:perfiles!anulado_por(nombre)",
+      )
       .eq("sesion_id", sesionId)
       .order("fecha", { ascending: true }),
   ]);
@@ -473,26 +529,32 @@ export async function obtenerSesionDetalle(sesionId: string): Promise<SesionDeta
     diferencia: sesion.diferencia !== null ? Number(sesion.diferencia) : null,
     observacionesApertura: sesion.observaciones_apertura,
     observacionesCierre: sesion.observaciones_cierre,
+    abiertaPor: sesion.abierta_por?.nombre ?? null,
+    cerradaPor: sesion.cerrada_por?.nombre ?? null,
     movimientos: (movimientos ?? []).map((movimiento) => ({
       id: movimiento.id,
       tipo: movimiento.tipo,
       monto: Number(movimiento.monto),
       fecha: movimiento.fecha,
       categoriaNombre: movimiento.categorias?.nombre ?? (movimiento.transferencia_id ? "Transferencia" : null),
+      categoriaIcono: movimiento.categorias?.icono ?? null,
+      categoriaColor: movimiento.categorias?.color ?? null,
       descripcion: movimiento.descripcion,
       anulado: movimiento.anulado_at !== null,
       motivoAnulacion: movimiento.motivo_anulacion,
+      anuladoPor: movimiento.anulado_por?.nombre ?? null,
+      comprobanteUrl: movimiento.comprobante_url,
       transferenciaId: movimiento.transferencia_id,
     })),
   };
 }
 
-export type EmpresaOpcion = { id: string; nombre: string };
+export type EmpresaOpcion = { id: string; nombre: string; color: string | null };
 
 export async function obtenerEmpresasActivas(): Promise<EmpresaOpcion[]> {
   const supabase = await createClient();
 
-  const { data } = await supabase.from("empresas").select("id, nombre").eq("activa", true).order("nombre");
+  const { data } = await supabase.from("empresas").select("id, nombre, color").eq("activa", true).order("nombre");
 
   return data ?? [];
 }
@@ -504,6 +566,7 @@ export type UsuarioAdmin = {
   rolGlobal: RolGlobal;
   activo: boolean;
   empresasAsignadas: string[];
+  empresaIdsAsignadas: string[];
 };
 
 export async function obtenerUsuarios(): Promise<UsuarioAdmin[]> {
@@ -511,15 +574,20 @@ export async function obtenerUsuarios(): Promise<UsuarioAdmin[]> {
 
   const [{ data: perfiles }, { data: asignaciones }] = await Promise.all([
     supabase.from("perfiles").select("id, nombre, email, rol_global, activo").order("nombre"),
-    supabase.from("asignaciones").select("usuario_id, empresas(nombre)"),
+    supabase.from("asignaciones").select("usuario_id, empresa_id, empresas(nombre)"),
   ]);
 
   const empresasPorUsuario = new Map<string, string[]>();
+  const empresaIdsPorUsuario = new Map<string, string[]>();
 
   for (const asignacion of asignaciones ?? []) {
     const lista = empresasPorUsuario.get(asignacion.usuario_id) ?? [];
     if (asignacion.empresas?.nombre) lista.push(asignacion.empresas.nombre);
     empresasPorUsuario.set(asignacion.usuario_id, lista);
+
+    const listaIds = empresaIdsPorUsuario.get(asignacion.usuario_id) ?? [];
+    listaIds.push(asignacion.empresa_id);
+    empresaIdsPorUsuario.set(asignacion.usuario_id, listaIds);
   }
 
   return (perfiles ?? []).map((perfil) => ({
@@ -529,6 +597,7 @@ export async function obtenerUsuarios(): Promise<UsuarioAdmin[]> {
     rolGlobal: perfil.rol_global,
     activo: perfil.activo,
     empresasAsignadas: empresasPorUsuario.get(perfil.id) ?? [],
+    empresaIdsAsignadas: empresaIdsPorUsuario.get(perfil.id) ?? [],
   }));
 }
 
@@ -606,4 +675,144 @@ export async function obtenerCategoriasPorTipo(tipo: "ingreso" | "egreso"): Prom
     .order("nombre");
 
   return data ?? [];
+}
+
+export type EmpresaAdmin = {
+  id: string;
+  nombre: string;
+  ruc: string | null;
+  color: string | null;
+  activa: boolean;
+  standsCount: number;
+  usuariosCount: number;
+};
+
+// Igual que obtenerEmpresasConConteo pero sin filtrar por activa (para el
+// CRUD de administración, que también necesita ver/reactivar inactivas).
+export async function obtenerEmpresasAdmin(): Promise<EmpresaAdmin[]> {
+  const supabase = await createClient();
+
+  const [{ data: empresas }, { data: stands }, { data: asignaciones }] = await Promise.all([
+    supabase.from("empresas").select("id, nombre, ruc, color, activa").order("nombre"),
+    supabase.from("stands").select("empresa_id").eq("activo", true),
+    supabase.from("asignaciones").select("empresa_id"),
+  ]);
+
+  const standsPorEmpresa = new Map<string, number>();
+  for (const stand of stands ?? []) {
+    standsPorEmpresa.set(stand.empresa_id, (standsPorEmpresa.get(stand.empresa_id) ?? 0) + 1);
+  }
+
+  const usuariosPorEmpresa = new Map<string, number>();
+  for (const asignacion of asignaciones ?? []) {
+    usuariosPorEmpresa.set(asignacion.empresa_id, (usuariosPorEmpresa.get(asignacion.empresa_id) ?? 0) + 1);
+  }
+
+  return (empresas ?? []).map((empresa) => ({
+    id: empresa.id,
+    nombre: empresa.nombre,
+    ruc: empresa.ruc,
+    color: empresa.color,
+    activa: empresa.activa,
+    standsCount: standsPorEmpresa.get(empresa.id) ?? 0,
+    usuariosCount: usuariosPorEmpresa.get(empresa.id) ?? 0,
+  }));
+}
+
+export type StandAdmin = {
+  id: string;
+  nombre: string;
+  activo: boolean;
+  empresaId: string;
+  empresaNombre: string;
+  empresaColor: string | null;
+};
+
+export async function obtenerStandsAdmin(): Promise<StandAdmin[]> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("stands")
+    .select("id, nombre, activo, empresa_id, empresas(nombre, color)")
+    .order("nombre");
+
+  return (data ?? []).map((stand) => ({
+    id: stand.id,
+    nombre: stand.nombre,
+    activo: stand.activo,
+    empresaId: stand.empresa_id,
+    empresaNombre: stand.empresas?.nombre ?? "—",
+    empresaColor: stand.empresas?.color ?? null,
+  }));
+}
+
+export type CategoriaAdmin = {
+  id: string;
+  nombre: string;
+  tipo: "ingreso" | "egreso";
+  descripcion: string | null;
+  icono: string | null;
+  color: string | null;
+  activa: boolean;
+};
+
+export async function obtenerCategoriasAdmin(): Promise<CategoriaAdmin[]> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("categorias")
+    .select("id, nombre, tipo, descripcion, icono, color, activa")
+    .order("nombre");
+
+  return data ?? [];
+}
+
+export type MovimientoReporte = {
+  id: string;
+  tipo: "ingreso" | "egreso";
+  monto: number;
+  fecha: string;
+  empresaId: string;
+  empresaNombre: string;
+  empresaColor: string | null;
+  categoriaId: string | null;
+  categoriaNombre: string | null;
+  categoriaIcono: string | null;
+  categoriaColor: string | null;
+};
+
+// Consolidado de la organización: solo movimientos de cajas de empresa (no
+// stands ni la caja de organización), igual que el resto del panel admin_general.
+export async function obtenerMovimientosReporte(rango: RangoFechas, empresaId?: string): Promise<MovimientoReporte[]> {
+  const supabase = await createClient();
+
+  let consulta = supabase
+    .from("movimientos")
+    .select(
+      "id, tipo, monto, fecha, categoria_id, categorias(nombre, icono, color), cajas!inner(empresa_id, tipo, empresas(nombre, color))",
+    )
+    .eq("cajas.tipo", "empresa")
+    .not("categoria_id", "is", null)
+    .is("anulado_at", null)
+    .order("fecha", { ascending: true });
+
+  if (rango.desde) consulta = consulta.gte("fecha", rango.desde);
+  if (rango.hasta) consulta = consulta.lte("fecha", rango.hasta);
+  if (empresaId) consulta = consulta.eq("cajas.empresa_id", empresaId);
+
+  const { data } = await consulta;
+
+  return (data ?? []).map((movimiento) => ({
+    id: movimiento.id,
+    tipo: movimiento.tipo,
+    monto: Number(movimiento.monto),
+    fecha: movimiento.fecha,
+    empresaId: movimiento.cajas?.empresa_id ?? "",
+    empresaNombre: movimiento.cajas?.empresas?.nombre ?? "—",
+    empresaColor: movimiento.cajas?.empresas?.color ?? null,
+    categoriaId: movimiento.categoria_id,
+    categoriaNombre: movimiento.categorias?.nombre ?? null,
+    categoriaIcono: movimiento.categorias?.icono ?? null,
+    categoriaColor: movimiento.categorias?.color ?? null,
+  }));
 }

@@ -63,4 +63,44 @@ export async function invitarUsuario(input: InvitarUsuarioInput) {
   }
 
   revalidatePath("/usuarios");
+  revalidatePath("/panel/usuarios");
+}
+
+type ActualizarUsuarioInput = {
+  rolGlobal: RolGlobal;
+  empresaIds: string[];
+};
+
+export async function actualizarUsuario(usuarioId: string, input: ActualizarUsuarioInput) {
+  const perfil = await obtenerPerfilActual();
+  if (perfil?.rol_global !== "admin_general") throw new Error("No autorizado");
+
+  if (input.rolGlobal === null && input.empresaIds.length === 0) {
+    throw new Error("Un encargado de empresa necesita al menos una empresa asignada");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("asignar_rol_usuario", {
+    p_usuario_id: usuarioId,
+    p_rol_global: input.rolGlobal,
+    p_empresa_ids: input.rolGlobal === null ? input.empresaIds : [],
+  });
+
+  if (error) {
+    console.error("actualizarUsuario: fallo al asignar rol", error);
+    throw new Error(error.message || "No se pudo actualizar el usuario");
+  }
+
+  revalidatePath("/panel/usuarios");
+}
+
+export async function cambiarEstadoUsuario(usuarioId: string, activo: boolean) {
+  const perfil = await obtenerPerfilActual();
+  if (perfil?.rol_global !== "admin_general") throw new Error("No autorizado");
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("perfiles").update({ activo }).eq("id", usuarioId);
+
+  if (error) throw new Error(error.message || "No se pudo cambiar el estado del usuario");
+  revalidatePath("/panel/usuarios");
 }

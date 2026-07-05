@@ -2,8 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import { CirclePlusIcon, CircleMinusIcon, LockIcon, LockOpenIcon } from "lucide-react";
-import { DialogRegistrarMovimiento } from "@/components/web/admin-general/dialog-registrar-movimiento";
-import { DialogAbrirCerrarCaja } from "@/components/web/admin-general/dialog-abrir-cerrar-caja";
+import { SheetRegistrarMovimiento } from "@/components/web/admin-general/sheet-registrar-movimiento";
+import { SheetAbrirCerrarCaja } from "@/components/web/admin-general/sheet-abrir-cerrar-caja";
 import type { CategoriaOpcion } from "@/lib/consultas";
 
 type Props = {
@@ -31,7 +31,7 @@ export function AccionesCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia
         <BotonAccion icon={abierta ? <LockIcon className="h-5 w-5" /> : <LockOpenIcon className="h-5 w-5" />} label={abierta ? "Cerrar" : "Abrir"} color={AZUL} onClick={() => setDialogoCaja(true)} />
       </div>
 
-      <DialogRegistrarMovimiento
+      <SheetRegistrarMovimiento
         cajaId={cajaId}
         abierto={dialogoMovimiento !== null}
         modoInicial={dialogoMovimiento ?? "ingreso"}
@@ -40,7 +40,7 @@ export function AccionesCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia
         onOpenChange={(abierto) => setDialogoMovimiento(abierto ? (dialogoMovimiento ?? "ingreso") : null)}
       />
 
-      <DialogAbrirCerrarCaja cajaId={cajaId} sesionAbiertaId={sesionAbiertaId} abierta={abierta} montoReferencia={montoReferencia} abierto={dialogoCaja} onOpenChange={setDialogoCaja} />
+      <SheetAbrirCerrarCaja cajaId={cajaId} sesionAbiertaId={sesionAbiertaId} abierta={abierta} montoReferencia={montoReferencia} abierto={dialogoCaja} onOpenChange={setDialogoCaja} />
     </>
   );
 }

@@ -151,20 +151,30 @@ export function SidebarWeb({ rol }: Props) {
       <div className="flex-1" />
 
       <div
-        className="relative overflow-hidden rounded-[20px] p-[20px] text-white"
+        className="relative overflow-hidden rounded-[20px] p-[20px] text-white [@media(max-height:880px)]:p-[14px]"
         style={{ background: "radial-gradient(120% 120% at 20% 10%, #1f8a54 0%, #0c2c1c 70%)" }}
       >
-        <div className="mb-[14px] flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-white/15">
-          <SmartphoneIcon className="h-[18px] w-[18px]" strokeWidth={2} />
+        {/* Versión completa: pantallas con alto de sobra */}
+        <div className="[@media(max-height:880px)]:hidden">
+          <div className="mb-[14px] flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-white/15">
+            <SmartphoneIcon className="h-[18px] w-[18px]" strokeWidth={2} />
+          </div>
+          <h4 className="mb-1 text-[17px] leading-[1.25]">Usa SCBox desde tu celular</h4>
+          <p className="mb-[14px] text-[12px] opacity-80">
+            Instálala como app para abrir cajas y registrar movimientos más rápido en el día a día.
+          </p>
         </div>
-        <h4 className="mb-1 text-[17px] leading-[1.25]">Usa SCBox desde tu celular</h4>
-        <p className="mb-[14px] text-[12px] opacity-80">
-          Instálala como app para abrir cajas y registrar movimientos más rápido en el día a día.
-        </p>
+
+        {/* Versión compacta: pantallas de poco alto (ej. MacBook 14") */}
+        <div className="mb-[10px] hidden items-center gap-[10px] [@media(max-height:880px)]:flex">
+          <SmartphoneIcon className="h-[16px] w-[16px] shrink-0" strokeWidth={2} />
+          <span className="text-[13px] leading-[1.2] font-semibold">Usa SCBox desde tu celular</span>
+        </div>
+
         <button
           type="button"
           onClick={avisarInstalacion}
-          className="w-full rounded-xl bg-[#2ecc71] py-[11px] text-sm font-bold text-[#06331d] hover:bg-[#37e07d]"
+          className="w-full rounded-xl bg-[#2ecc71] py-[11px] text-sm font-bold text-[#06331d] hover:bg-[#37e07d] [@media(max-height:880px)]:py-[8px] [@media(max-height:880px)]:text-xs"
         >
           Cómo instalar
         </button>
