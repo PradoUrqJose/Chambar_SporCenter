@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatearMontoPartes } from "@/lib/formato";
+import { formatearMontoPartes, obtenerIniciales } from "@/lib/formato";
 import { oscurecerColor } from "@/lib/color";
 import type { CajaEmpresa } from "@/lib/consultas";
 
@@ -9,12 +9,6 @@ type Props = {
 };
 
 const COLOR_POR_DEFECTO = "#006d36";
-
-function iniciales(nombre: string): string {
-  const palabras = nombre.trim().split(/\s+/);
-  if (palabras.length === 1) return palabras[0].slice(0, 2).toUpperCase();
-  return (palabras[0][0] + palabras[1][0]).toUpperCase();
-}
 
 export function CajasAdminOrganizacion({ nombreUsuario, cajas }: Props) {
   return (
@@ -41,7 +35,7 @@ export function CajasAdminOrganizacion({ nombreUsuario, cajas }: Props) {
                   style={{ background: `linear-gradient(135deg, ${color}, ${oscurecerColor(color, 0.55)})` }}
                 >
                   <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')] opacity-[0.18]" />
-                  <span className="relative">{iniciales(caja.nombre)}</span>
+                  <span className="relative">{obtenerIniciales(caja.nombre)}</span>
                 </div>
                 <h3 className="flex-1 truncate text-lg font-bold text-gray-800">{caja.nombre}</h3>
                 <span
