@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { obtenerPerfilActual } from "@/lib/perfil";
 import { puedeOperarTodas } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
@@ -34,6 +34,7 @@ export async function crearCategoria(input: CategoriaInput) {
 
   if (error) throw new Error(error.message || "No se pudo crear la categoría");
   revalidatePath("/panel/categorias");
+  revalidateTag("categorias", { expire: 0 });
 }
 
 export async function actualizarCategoria(id: string, input: CategoriaInput) {
@@ -55,6 +56,7 @@ export async function actualizarCategoria(id: string, input: CategoriaInput) {
 
   if (error) throw new Error(error.message || "No se pudo actualizar la categoría");
   revalidatePath("/panel/categorias");
+  revalidateTag("categorias", { expire: 0 });
 }
 
 export async function cambiarEstadoCategoria(id: string, activa: boolean) {
@@ -64,4 +66,5 @@ export async function cambiarEstadoCategoria(id: string, activa: boolean) {
 
   if (error) throw new Error(error.message || "No se pudo cambiar el estado");
   revalidatePath("/panel/categorias");
+  revalidateTag("categorias", { expire: 0 });
 }

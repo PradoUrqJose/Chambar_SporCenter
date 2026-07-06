@@ -1,13 +1,12 @@
-"use client";
-
-import { useState, type ReactNode } from "react";
-import Link from "next/link";
-import { ArrowDownIcon, ArrowLeftIcon, ArrowUpIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { formatearMontoPartes, formatearFecha, formatearHora, obtenerIniciales } from "@/lib/formato";
 import { colorConAlpha, oscurecerColor } from "@/lib/color";
 import { obtenerEstadoArqueo } from "@/lib/arqueo";
 import { AccionesCaja } from "@/components/web/cajas/acciones-caja";
-import { CardMovimientosSemana, CardMovimientosSesion } from "@/components/web/cajas/movimientos-caja";
+import { CardMovimientosSesion } from "@/components/web/cajas/movimientos-caja";
+import { CardMovimientosSemana } from "@/components/web/cajas/tabla-movimientos-semana";
+import { SelectorVistaCaja } from "@/components/web/cajas/selector-vista-caja";
 import type { CajaEmpresaDetalle, CategoriaOpcion, FlujoDia, MovimientoReciente, SesionDetalle, SesionDia, StandOpcion } from "@/lib/consultas";
 
 type Props = {
@@ -47,62 +46,36 @@ export function CajaDetalle({
   stands,
   mostrarVolver = true,
 }: Props) {
-  const [vista, setVista] = useState<"sesion" | "semana">(sesionActual ? "sesion" : "semana");
-
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out motion-reduce:animate-none">
-      <div className="mb-[18px] flex items-center justify-between gap-3">
-        {mostrarVolver ? (
-          <Link href="/panel/cajas" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
-            <ArrowLeftIcon className="h-4 w-4" />
-            Cajas
-          </Link>
-        ) : (
-          <div />
-        )}
-
-        <div className="flex items-center gap-1 rounded-full bg-muted p-1">
-          <button
-            type="button"
-            onClick={() => setVista("sesion")}
-            disabled={!sesionActual}
-            className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-              vista === "sesion" ? "bg-card shadow-sm" : "text-muted-foreground"
-            }`}
-          >
-            Sesión actual
-          </button>
-          <button
-            type="button"
-            onClick={() => setVista("semana")}
-            className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors ${vista === "semana" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
-          >
-            Semana
-          </button>
-        </div>
-      </div>
-
-      {vista === "sesion" && sesionActual ? (
-        <VistaSesionActual
-          caja={caja}
-          sesionActual={sesionActual}
-          fechaHoy={fechaHoy}
-          urlsComprobantes={urlsComprobantes}
-          categoriasIngreso={categoriasIngreso}
-          categoriasEgreso={categoriasEgreso}
-          stands={stands}
-        />
-      ) : (
-        <VistaSemana
-          caja={caja}
-          flujoSemanal={flujoSemanal}
-          movimientos={movimientos}
-          sesionesSemana={sesionesSemana}
-          urlsComprobantes={urlsComprobantes}
-          categoriasIngreso={categoriasIngreso}
-          categoriasEgreso={categoriasEgreso}
-        />
-      )}
+      <SelectorVistaCaja
+        mostrarVolver={mostrarVolver}
+        haySesionActual={sesionActual !== null}
+        vistaSesion={
+          sesionActual && (
+            <VistaSesionActual
+              caja={caja}
+              sesionActual={sesionActual}
+              fechaHoy={fechaHoy}
+              urlsComprobantes={urlsComprobantes}
+              categoriasIngreso={categoriasIngreso}
+              categoriasEgreso={categoriasEgreso}
+              stands={stands}
+            />
+          )
+        }
+        vistaSemana={
+          <VistaSemana
+            caja={caja}
+            flujoSemanal={flujoSemanal}
+            movimientos={movimientos}
+            sesionesSemana={sesionesSemana}
+            urlsComprobantes={urlsComprobantes}
+            categoriasIngreso={categoriasIngreso}
+            categoriasEgreso={categoriasEgreso}
+          />
+        }
+      />
     </div>
   );
 }

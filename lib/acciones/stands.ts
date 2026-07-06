@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { obtenerPerfilActual } from "@/lib/perfil";
 import { createClient } from "@/lib/supabase/server";
 
@@ -29,6 +29,7 @@ export async function crearStand(input: StandInput) {
 
   if (error) throw new Error(error.message || "No se pudo crear el stand");
   revalidatePath("/panel/stands");
+  revalidateTag("stands", { expire: 0 });
 }
 
 export async function actualizarStand(id: string, input: StandInput) {
@@ -43,6 +44,7 @@ export async function actualizarStand(id: string, input: StandInput) {
   if (error) throw new Error(error.message || "No se pudo actualizar el stand");
   if (!data || data.length === 0) throw new Error("No autorizado o el stand ya no existe");
   revalidatePath("/panel/stands");
+  revalidateTag("stands", { expire: 0 });
 }
 
 export async function cambiarEstadoStand(id: string, activo: boolean) {
@@ -53,4 +55,5 @@ export async function cambiarEstadoStand(id: string, activo: boolean) {
   if (error) throw new Error(error.message || "No se pudo cambiar el estado");
   if (!data || data.length === 0) throw new Error("No autorizado o el stand ya no existe");
   revalidatePath("/panel/stands");
+  revalidateTag("stands", { expire: 0 });
 }

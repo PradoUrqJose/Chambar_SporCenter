@@ -1,4 +1,6 @@
+import { unstable_cache } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import type { RolGlobal } from "@/lib/roles";
 
 const ZONA_HORARIA = "America/Lima";
@@ -763,18 +765,25 @@ export async function obtenerEmpresasConConteo(): Promise<EmpresaResumen[]> {
 
 export type CategoriaOpcion = { id: string; nombre: string; icono: string | null; color: string | null };
 
-export async function obtenerCategoriasPorTipo(tipo: "ingreso" | "egreso"): Promise<CategoriaOpcion[]> {
-  const supabase = await createClient();
+// Catálogo casi estático (lo edita el admin desde el panel, cambia poco):
+// se cachea 5 min entre requests, con invalidación inmediata por tag cuando
+// se crea/edita/desactiva una categoría (ver lib/acciones/categorias.ts).
+export const obtenerCategoriasPorTipo = unstable_cache(
+  async (tipo: "ingreso" | "egreso"): Promise<CategoriaOpcion[]> => {
+    const supabase = createServiceClient();
 
-  const { data } = await supabase
-    .from("categorias")
-    .select("id, nombre, icono, color")
-    .eq("tipo", tipo)
-    .eq("activa", true)
-    .order("nombre");
+    const { data } = await supabase
+      .from("categorias")
+      .select("id, nombre, icono, color")
+      .eq("tipo", tipo)
+      .eq("activa", true)
+      .order("nombre");
 
-  return data ?? [];
-}
+    return data ?? [];
+  },
+  ["categorias-por-tipo"],
+  { revalidate: 300, tags: ["categorias"] },
+);
 
 export type EmpresaAdmin = {
   id: string;
@@ -853,13 +862,19 @@ export type StandOpcion = { id: string; nombre: string };
 
 // Para el selector de "entregar/recibir fondo fijo" en la caja de la
 // empresa: solo stands activos, sin los datos administrativos de StandAdmin.
-export async function obtenerStandsActivos(empresaId: string): Promise<StandOpcion[]> {
-  const supabase = await createClient();
+// Cambia poco (lo edita el admin), se cachea con invalidación por tag
+// cuando se crea/edita/desactiva un stand (ver lib/acciones/stands.ts).
+export const obtenerStandsActivos = unstable_cache(
+  async (empresaId: string): Promise<StandOpcion[]> => {
+    const supabase = createServiceClient();
 
-  const { data } = await supabase.from("stands").select("id, nombre").eq("empresa_id", empresaId).eq("activo", true).order("nombre");
+    const { data } = await supabase.from("stands").select("id, nombre").eq("empresa_id", empresaId).eq("activo", true).order("nombre");
 
-  return data ?? [];
-}
+    return data ?? [];
+  },
+  ["stands-activos"],
+  { revalidate: 300, tags: ["stands"] },
+);
 
 export type CategoriaAdmin = {
   id: string;
