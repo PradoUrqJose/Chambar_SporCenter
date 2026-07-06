@@ -53,9 +53,11 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
+  const tGetUser = performance.now();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  console.log(`[TIMING] proxy getUser() ${request.nextUrl.pathname}: ${(performance.now() - tGetUser).toFixed(0)}ms`);
 
   if (!user && !esRutaPublica(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
