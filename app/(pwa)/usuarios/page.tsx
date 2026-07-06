@@ -1,6 +1,6 @@
 import { obtenerPerfilActual } from "@/lib/perfil";
 import { obtenerEmpresasActivas, obtenerUsuarios } from "@/lib/consultas";
-import { UsuariosAdminGeneral } from "@/components/pwa/admin-general/usuarios";
+import { UsuariosAdminGeneral } from "@/components/pwa/usuarios/usuarios";
 
 export default async function UsuariosPage() {
   const perfil = await obtenerPerfilActual();

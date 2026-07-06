@@ -158,7 +158,7 @@
    evidencia todavía en ningún mockup (--tinta*, --cobre*) quedan
    neutros hasta la próxima pantalla. */
 .pwa-mode {
-  --background: #f9fafb;
+  --background: #fbfcfd;
   --foreground: #111827;
   --card: #ffffff;
   --card-foreground: #111827;
@@ -215,8 +215,19 @@
   }
 }
 
+/* View Transition API (components/pwa/view-transitions.tsx): al ir de la
+   lista de Cajas a su detalle, nombre/saldo comparten view-transition-name
+   y el navegador los morphea automáticamente; acá solo afinamos el timing
+   por defecto (250ms linear) para que se sienta igual de suave que el resto
+   de la PWA. Sin nombre coincidente en la página nueva, el elemento
+   simplemente hace fade — no rompe otras navegaciones. */
+::view-transition-group(*) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Brillo del número destacado en la stat card hero del dashboard web
-   (components/web/admin-general/inicio.tsx) — mismo efecto que el mockup. */
+   (components/web/inicio/inicio.tsx) — mismo efecto que el mockup. */
 @keyframes bloom {
   from {
     text-shadow:

@@ -61,7 +61,7 @@ export function Ajustes({ perfil }: Props) {
           <InfoIcon className="h-4 w-4 text-gray-400" />
           <p className="text-sm font-bold text-gray-800">Acerca de</p>
         </div>
-        <p className="text-xs text-gray-400">SCBox — control de caja de {NOMBRE_ORGANIZACION}</p>
+        <p className="text-xs text-gray-400">Chambar — control de caja de {NOMBRE_ORGANIZACION}</p>
       </section>
 
       <div className="mt-2">

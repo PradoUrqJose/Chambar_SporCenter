@@ -10,7 +10,7 @@ export default function AuthLayout({
       <div className="flex w-full max-w-4xl min-h-[560px] flex-col overflow-hidden rounded-2xl bg-card shadow-xl md:flex-row">
         <div className="flex flex-1 flex-col justify-center p-8 sm:p-12">
           <p className="mb-8 font-heading text-2xl font-bold tracking-tight text-tinta">
-            SCBox
+            Chambar
           </p>
           <div className="w-full max-w-sm">{children}</div>
         </div>

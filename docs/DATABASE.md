@@ -1,8 +1,8 @@
-# Base de datos — SCBox
+# Base de datos — Chambar
 
 Explicación funcional del esquema (Supabase/Postgres). Para el detalle técnico ver [schema.sql](schema.sql); para las reglas de negocio ver [BUSINESS_RULES.md](BUSINESS_RULES.md); para los tipos ver [ENUMS.md](ENUMS.md); para el diagrama ver [ERD.md](ERD.md); para el porqué de las decisiones ver [decisions.md](decisions.md).
 
-## ¿Qué es SCBox?
+## ¿Qué es Chambar?
 
 Un control de caja multiempresa: una organización maneja varias **empresas**, cada empresa tiene una o más **cajas** (un `stand` de venta o una caja `central`). Cada caja se opera en **sesiones**: se abre con un monto inicial, se registran **movimientos** (ingresos/egresos) durante el día, y se cierra con un arqueo (conteo físico vs. lo esperado por sistema).
 

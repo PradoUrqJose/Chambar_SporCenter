@@ -1,4 +1,4 @@
-# ERD — SCBox
+# ERD — Chambar
 
 Diagrama entidad-relación generado desde `docs/schema.sql`. No incluye `auth.users` (gestionada por Supabase) más que como referencia externa de `perfiles`.
 

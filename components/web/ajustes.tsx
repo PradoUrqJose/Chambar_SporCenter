@@ -106,7 +106,7 @@ export function AjustesWeb({ perfil }: Props) {
           <InfoIcon className="h-4 w-4 text-muted-foreground" />
           <p className="text-sm font-bold">Acerca de</p>
         </div>
-        <p className="text-xs text-muted-foreground">SCBox — control de caja de {NOMBRE_ORGANIZACION}.</p>
+        <p className="text-xs text-muted-foreground">Chambar — control de caja de {NOMBRE_ORGANIZACION}.</p>
       </div>
 
       <SheetEditarNombre abierto={editandoNombre} onOpenChange={setEditandoNombre} nombreActual={nombre} />

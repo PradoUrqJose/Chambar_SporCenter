@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { obtenerPerfilActual } from "@/lib/perfil";
+import { puedeOperarTodas } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 
-async function verificarAdminGeneral() {
+async function verificarPuedeGestionarCategorias() {
   const perfil = await obtenerPerfilActual();
-  if (perfil?.rol_global !== "admin_general") throw new Error("No autorizado");
+  if (!perfil || !puedeOperarTodas(perfil.rol_global)) throw new Error("No autorizado");
 }
 
 type CategoriaInput = {
@@ -18,7 +19,7 @@ type CategoriaInput = {
 };
 
 export async function crearCategoria(input: CategoriaInput) {
-  await verificarAdminGeneral();
+  await verificarPuedeGestionarCategorias();
   const nombre = input.nombre.trim();
   if (!nombre) throw new Error("El nombre es obligatorio");
 
@@ -36,7 +37,7 @@ export async function crearCategoria(input: CategoriaInput) {
 }
 
 export async function actualizarCategoria(id: string, input: CategoriaInput) {
-  await verificarAdminGeneral();
+  await verificarPuedeGestionarCategorias();
   const nombre = input.nombre.trim();
   if (!nombre) throw new Error("El nombre es obligatorio");
 
@@ -57,7 +58,7 @@ export async function actualizarCategoria(id: string, input: CategoriaInput) {
 }
 
 export async function cambiarEstadoCategoria(id: string, activa: boolean) {
-  await verificarAdminGeneral();
+  await verificarPuedeGestionarCategorias();
   const supabase = await createClient();
   const { error } = await supabase.from("categorias").update({ activa }).eq("id", id);
 

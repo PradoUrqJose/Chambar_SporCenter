@@ -1,6 +1,6 @@
 import { obtenerPerfilActual } from "@/lib/perfil";
 import { obtenerEmpresasActivas, obtenerUsuarios } from "@/lib/consultas";
-import { UsuariosAdminGeneral } from "@/components/web/admin-general/usuarios";
+import { UsuariosAdminGeneral } from "@/components/web/usuarios/usuarios";
 import { PlaceholderPanel } from "@/components/web/placeholder-panel";
 
 export default async function UsuariosPanelPage() {

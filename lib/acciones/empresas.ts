@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { obtenerPerfilActual } from "@/lib/perfil";
+import { puedeOperarTodas } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 
-async function verificarAdminGeneral() {
+async function verificarPuedeGestionarEmpresas() {
   const perfil = await obtenerPerfilActual();
-  if (perfil?.rol_global !== "admin_general") throw new Error("No autorizado");
+  if (!perfil || !puedeOperarTodas(perfil.rol_global)) throw new Error("No autorizado");
 }
 
 type EmpresaInput = {
@@ -16,7 +17,7 @@ type EmpresaInput = {
 };
 
 export async function crearEmpresa(input: EmpresaInput) {
-  await verificarAdminGeneral();
+  await verificarPuedeGestionarEmpresas();
   const nombre = input.nombre.trim();
   if (!nombre) throw new Error("El nombre es obligatorio");
 
@@ -32,7 +33,7 @@ export async function crearEmpresa(input: EmpresaInput) {
 }
 
 export async function actualizarEmpresa(id: string, input: EmpresaInput) {
-  await verificarAdminGeneral();
+  await verificarPuedeGestionarEmpresas();
   const nombre = input.nombre.trim();
   if (!nombre) throw new Error("El nombre es obligatorio");
 
@@ -47,7 +48,7 @@ export async function actualizarEmpresa(id: string, input: EmpresaInput) {
 }
 
 export async function cambiarEstadoEmpresa(id: string, activa: boolean) {
-  await verificarAdminGeneral();
+  await verificarPuedeGestionarEmpresas();
   const supabase = await createClient();
   const { error } = await supabase.from("empresas").update({ activa }).eq("id", id);
 

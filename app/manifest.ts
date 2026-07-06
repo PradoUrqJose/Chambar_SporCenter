@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "SCBox",
-    short_name: "SCBox",
+    name: "Chambar",
+    short_name: "Chambar",
     description: "Control de caja multiempresa",
     start_url: "/",
     display: "standalone",

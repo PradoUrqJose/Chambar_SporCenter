@@ -1,6 +1,6 @@
 import { obtenerPerfilActual } from "@/lib/perfil";
 import { obtenerCajasEmpresas } from "@/lib/consultas";
-import { CajasAdminOrganizacion } from "@/components/pwa/admin-organizacion/cajas";
+import { CajasAdminOrganizacion } from "@/components/pwa/cajas/cajas";
 
 export default async function CajasPage() {
   const perfil = await obtenerPerfilActual();

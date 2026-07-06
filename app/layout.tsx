@@ -33,7 +33,7 @@ const jetbrainsMono = JetBrains_Mono({
 const SCRIPT_DETECCION_PWA = `(function(){try{var d=document.documentElement;var pwa=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;if(pwa){d.classList.add('pwa-mode');d.style.setProperty('--font-sans','var(--font-manrope)');}}catch(e){}})();`;
 
 export const metadata: Metadata = {
-  title: "SCBox",
+  title: "Chambar",
   description: "Control de caja multiempresa",
   manifest: "/manifest.webmanifest",
   icons: {
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "SCBox",
+    title: "Chambar",
   },
 };
 

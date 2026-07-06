@@ -1,4 +1,4 @@
-# Enums — SCBox
+# Enums — Chambar
 
 Tipos definidos en `supabase/migrations/20260702100001_esquema_inicial.sql`.
 

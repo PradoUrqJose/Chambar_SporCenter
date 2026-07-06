@@ -1,6 +1,6 @@
 import { obtenerPerfilActual } from "@/lib/perfil";
 import { buscarMovimientos, obtenerCajasFiltro, obtenerSesionesCerradas } from "@/lib/consultas";
-import { HistorialAdminOrganizacion } from "@/components/pwa/admin-organizacion/historial";
+import { HistorialAdminOrganizacion } from "@/components/pwa/historial/historial";
 
 type Props = {
   searchParams: Promise<{ caja?: string; q?: string }>;

@@ -1,4 +1,4 @@
-# Decisiones de arquitectura — Base de datos SCBox
+# Decisiones de arquitectura — Base de datos Chambar
 
 Registro de *por qué* el esquema quedó así, no solo *qué* hace. Fuente: `plan.md`, comentarios en `supabase/migrations/`.
 

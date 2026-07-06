@@ -61,9 +61,13 @@ export async function obtenerMovimientosHoy(): Promise<{
 
 export type FlujoDia = { dia: string; fecha: string; ingresos: number; egresos: number };
 
-export async function obtenerFlujoSemanal(cajaId?: string): Promise<FlujoDia[]> {
+// desplazamientoSemanas retrocede el ventanal de 6 días en bloques de 6 días
+// (0 = ventana actual, 1 = los 6 días inmediatamente anteriores, etc.), para
+// que el dashboard pueda navegar semanas atrás sin dejar huecos ni solapes.
+export async function obtenerFlujoSemanal(cajaId?: string, desplazamientoSemanas = 0): Promise<FlujoDia[]> {
   const supabase = await createClient();
-  const dias = Array.from({ length: 6 }, (_, i) => fechaLima(i - 5));
+  const retroceso = 6 * desplazamientoSemanas;
+  const dias = Array.from({ length: 6 }, (_, i) => fechaLima(i - 5 - retroceso));
 
   const { inicio } = limitesDelDia(dias[0]);
   const { fin } = limitesDelDia(dias[dias.length - 1]);
@@ -100,6 +104,57 @@ export async function obtenerFlujoSemanal(cajaId?: string): Promise<FlujoDia[]> 
     fecha: `${fecha}T12:00:00Z`,
     ...totalesPorDia.get(fecha)!,
   }));
+}
+
+export type CategoriaTop = {
+  id: string;
+  nombre: string;
+  icono: string | null;
+  color: string | null;
+  tipo: "ingreso" | "egreso";
+  total: number;
+};
+
+// Top categorías (ingresos y egresos mezclados) de la misma ventana de 6 días
+// que obtenerFlujoSemanal, para el ranking del dashboard.
+export async function obtenerCategoriasTop(cajaId?: string, limite = 5): Promise<CategoriaTop[]> {
+  const supabase = await createClient();
+  const dias = Array.from({ length: 6 }, (_, i) => fechaLima(i - 5));
+
+  const { inicio } = limitesDelDia(dias[0]);
+  const { fin } = limitesDelDia(dias[dias.length - 1]);
+
+  let consulta = supabase
+    .from("movimientos")
+    .select("tipo, monto, categoria_id, categorias(nombre, icono, color)")
+    .not("categoria_id", "is", null)
+    .is("anulado_at", null)
+    .gte("fecha", inicio)
+    .lte("fecha", fin);
+
+  if (cajaId) consulta = consulta.eq("caja_id", cajaId);
+
+  const { data } = await consulta;
+
+  const totalesPorCategoria = new Map<string, CategoriaTop>();
+
+  for (const movimiento of data ?? []) {
+    if (!movimiento.categoria_id) continue;
+    const actual = totalesPorCategoria.get(movimiento.categoria_id) ?? {
+      id: movimiento.categoria_id,
+      nombre: movimiento.categorias?.nombre ?? "Sin categoría",
+      icono: movimiento.categorias?.icono ?? null,
+      color: movimiento.categorias?.color ?? null,
+      tipo: movimiento.tipo,
+      total: 0,
+    };
+    actual.total += Number(movimiento.monto);
+    totalesPorCategoria.set(movimiento.categoria_id, actual);
+  }
+
+  return Array.from(totalesPorCategoria.values())
+    .sort((a, b) => b.total - a.total)
+    .slice(0, limite);
 }
 
 export type SesionDia = {
@@ -286,17 +341,21 @@ export type AlertaArqueo = {
   diferencia: number;
 };
 
-export async function obtenerAlertasArqueo(dias = 7): Promise<AlertaArqueo[]> {
+export async function obtenerAlertasArqueo(dias = 7, cajaId?: string): Promise<AlertaArqueo[]> {
   const supabase = await createClient();
   const desde = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data } = await supabase
+  let consulta = supabase
     .from("sesiones_caja")
     .select("id, cierre_at, diferencia, cajas(nombre, empresas(color))")
     .not("cierre_at", "is", null)
     .gte("cierre_at", desde)
     .neq("diferencia", 0)
     .order("cierre_at", { ascending: false });
+
+  if (cajaId) consulta = consulta.eq("caja_id", cajaId);
+
+  const { data } = await consulta;
 
   return (data ?? []).map((sesion) => ({
     sesionId: sesion.id,
@@ -321,20 +380,36 @@ export type ResultadoBusquedaMovimiento = {
   fecha: string;
 };
 
-// Búsqueda solo por descripción por ahora (ilike va parametrizado por
-// supabase-js, seguro); categoría/monto quedan pendientes de otra ronda para
-// no filtrar sobre columnas embebidas con texto libre sin resolver bien los casos borde.
+// PostgREST usa comillas dobles para delimitar valores con caracteres
+// especiales (",", ".", "(", ")") dentro de un .or(); escapamos backslash y
+// comillas dobles propias del texto para no romper ese delimitado.
+function escaparValorFiltro(valor: string): string {
+  return valor.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+// Búsqueda por descripción del movimiento o por nombre de categoría. Monto
+// queda pendiente de otra ronda (requiere decidir cómo interpretar texto
+// libre como número/rango).
 export async function buscarMovimientos(texto: string): Promise<ResultadoBusquedaMovimiento[]> {
   const textoLimpio = texto.trim();
   if (!textoLimpio) return [];
 
   const supabase = await createClient();
 
+  const { data: categoriasCoincidentes } = await supabase
+    .from("categorias")
+    .select("id")
+    .ilike("nombre", `%${textoLimpio}%`);
+
+  const idsCategorias = (categoriasCoincidentes ?? []).map((categoria) => categoria.id);
+  const filtroDescripcion = `descripcion.ilike."%${escaparValorFiltro(textoLimpio)}%"`;
+  const filtro = idsCategorias.length > 0 ? `${filtroDescripcion},categoria_id.in.(${idsCategorias.join(",")})` : filtroDescripcion;
+
   const { data } = await supabase
     .from("movimientos")
     .select("id, sesion_id, tipo, monto, descripcion, fecha, categorias(nombre, icono, color), cajas(nombre, empresas(color))")
     .is("anulado_at", null)
-    .ilike("descripcion", `%${textoLimpio}%`)
+    .or(filtro)
     .order("fecha", { ascending: false })
     .limit(30);
 
@@ -474,6 +549,8 @@ export type MovimientoLibroMayor = {
   anuladoPor: string | null;
   comprobanteUrl: string | null;
   transferenciaId: string | null;
+  creadoPor: string | null;
+  standNombre: string | null;
 };
 
 export type SesionDetalle = {
@@ -508,7 +585,7 @@ export async function obtenerSesionDetalle(sesionId: string): Promise<SesionDeta
     supabase
       .from("movimientos")
       .select(
-        "id, tipo, monto, fecha, descripcion, comprobante_url, anulado_at, motivo_anulacion, transferencia_id, categorias(nombre, icono, color), anulado_por:perfiles!anulado_por(nombre)",
+        "id, tipo, monto, fecha, descripcion, comprobante_url, anulado_at, motivo_anulacion, transferencia_id, categorias(nombre, icono, color), anulado_por:perfiles!anulado_por(nombre), creado_por:perfiles!creado_por(nombre), stands(nombre)",
       )
       .eq("sesion_id", sesionId)
       .order("fecha", { ascending: true }),
@@ -545,6 +622,8 @@ export async function obtenerSesionDetalle(sesionId: string): Promise<SesionDeta
       anuladoPor: movimiento.anulado_por?.nombre ?? null,
       comprobanteUrl: movimiento.comprobante_url,
       transferenciaId: movimiento.transferencia_id,
+      creadoPor: movimiento.creado_por?.nombre ?? null,
+      standNombre: movimiento.stands?.nombre ?? null,
     })),
   };
 }
@@ -614,6 +693,26 @@ export async function obtenerResumenOrganizacion(): Promise<ResumenOrganizacion>
     supabase.from("empresas").select("id", { count: "exact", head: true }).eq("activa", true),
     supabase.from("perfiles").select("id", { count: "exact", head: true }),
     supabase.from("stands").select("id", { count: "exact", head: true }).eq("activo", true),
+  ]);
+
+  return {
+    empresasActivas: empresasActivas ?? 0,
+    usuariosTotales: usuariosTotales ?? 0,
+    standsActivos: standsActivos ?? 0,
+  };
+}
+
+// Mismo shape que ResumenOrganizacion pero acotado a una sola empresa, para
+// que el dashboard de admin_empresa reuse InicioAdminGeneral sin cambios:
+// empresasActivas queda en 0/1 (si la suya está activa), usuariosTotales
+// cuenta asignaciones (mismo criterio que obtenerEmpresasConConteo).
+export async function obtenerResumenEmpresa(empresaId: string): Promise<ResumenOrganizacion> {
+  const supabase = await createClient();
+
+  const [{ count: empresasActivas }, { count: usuariosTotales }, { count: standsActivos }] = await Promise.all([
+    supabase.from("empresas").select("id", { count: "exact", head: true }).eq("id", empresaId).eq("activa", true),
+    supabase.from("asignaciones").select("usuario_id", { count: "exact", head: true }).eq("empresa_id", empresaId),
+    supabase.from("stands").select("id", { count: "exact", head: true }).eq("empresa_id", empresaId).eq("activo", true),
   ]);
 
   return {
@@ -728,13 +827,17 @@ export type StandAdmin = {
   empresaColor: string | null;
 };
 
-export async function obtenerStandsAdmin(): Promise<StandAdmin[]> {
+export async function obtenerStandsAdmin(empresaId?: string): Promise<StandAdmin[]> {
   const supabase = await createClient();
 
-  const { data } = await supabase
+  let consulta = supabase
     .from("stands")
     .select("id, nombre, activo, empresa_id, empresas(nombre, color)")
     .order("nombre");
+
+  if (empresaId) consulta = consulta.eq("empresa_id", empresaId);
+
+  const { data } = await consulta;
 
   return (data ?? []).map((stand) => ({
     id: stand.id,
@@ -744,6 +847,18 @@ export async function obtenerStandsAdmin(): Promise<StandAdmin[]> {
     empresaNombre: stand.empresas?.nombre ?? "—",
     empresaColor: stand.empresas?.color ?? null,
   }));
+}
+
+export type StandOpcion = { id: string; nombre: string };
+
+// Para el selector de "entregar/recibir fondo fijo" en la caja de la
+// empresa: solo stands activos, sin los datos administrativos de StandAdmin.
+export async function obtenerStandsActivos(empresaId: string): Promise<StandOpcion[]> {
+  const supabase = await createClient();
+
+  const { data } = await supabase.from("stands").select("id, nombre").eq("empresa_id", empresaId).eq("activo", true).order("nombre");
+
+  return data ?? [];
 }
 
 export type CategoriaAdmin = {

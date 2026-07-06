@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { obtenerPerfilActual } from "@/lib/perfil";
 import { obtenerCajaEmpresa, obtenerCategoriasPorTipo, obtenerFlujoSemanal, obtenerMovimientosSemana, obtenerSesionesSemana } from "@/lib/consultas";
-import { CajaDetalleAdminOrganizacion } from "@/components/pwa/admin-organizacion/caja-detalle";
+import { CajaDetalle } from "@/components/pwa/cajas/caja-detalle";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -24,7 +24,7 @@ export default async function CajaEmpresaPage({ params }: Props) {
     ]);
 
     return (
-      <CajaDetalleAdminOrganizacion
+      <CajaDetalle
         caja={caja}
         flujoSemanal={flujoSemanal}
         movimientos={movimientos}

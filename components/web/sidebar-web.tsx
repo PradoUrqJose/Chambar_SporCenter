@@ -25,9 +25,11 @@ type NavGroup = { label: string; items: NavItem[] };
 
 const iconProps = { className: "h-[19px] w-[19px]", strokeWidth: 1.9 };
 
-function gruposParaRol(rol: RolGlobal): NavGroup[] {
+function gruposParaRol(rol: RolGlobal, empresaAsignada: string | null): NavGroup[] {
   switch (rol) {
     case "admin_organizacion":
+      // Igual que admin_general, excepto Usuarios (eso sigue siendo
+      // exclusivo de admin_general).
       return [
         {
           label: "MENÚ",
@@ -35,6 +37,15 @@ function gruposParaRol(rol: RolGlobal): NavGroup[] {
             { href: "/panel/inicio", label: "Inicio", icon: <LayoutDashboardIcon {...iconProps} /> },
             { href: "/panel/cajas", label: "Cajas", icon: <WalletIcon {...iconProps} /> },
             { href: "/panel/historial", label: "Historial", icon: <HistoryIcon {...iconProps} /> },
+          ],
+        },
+        {
+          label: "ADMINISTRACIÓN",
+          items: [
+            { href: "/panel/empresas", label: "Empresas", icon: <Building2Icon {...iconProps} /> },
+            { href: "/panel/stands", label: "Stands", icon: <StoreIcon {...iconProps} /> },
+            { href: "/panel/categorias", label: "Categorías", icon: <TagsIcon {...iconProps} /> },
+            { href: "/panel/reportes", label: "Reportes", icon: <FileBarChart2Icon {...iconProps} /> },
           ],
         },
       ];
@@ -60,12 +71,24 @@ function gruposParaRol(rol: RolGlobal): NavGroup[] {
         },
       ];
     case null:
+      // admin_empresa: mismas vistas de Inicio/Cajas/Historial que admin_general
+      // (acotadas a su única empresa/caja) + único CRUD propio: Stands.
+      // El link va directo a /panel/cajas/{empresaId} para no pasar por el
+      // redirect de /panel/cajas (ida y vuelta al servidor sin necesidad).
       return [
         {
           label: "MENÚ",
           items: [
-            { href: "/panel/caja", label: "Caja", icon: <WalletIcon {...iconProps} /> },
+            { href: "/panel/inicio", label: "Inicio", icon: <LayoutDashboardIcon {...iconProps} /> },
+            { href: empresaAsignada ? `/panel/cajas/${empresaAsignada}` : "/panel/cajas", label: "Caja", icon: <WalletIcon {...iconProps} /> },
             { href: "/panel/historial", label: "Historial", icon: <HistoryIcon {...iconProps} /> },
+          ],
+        },
+        {
+          label: "ADMINISTRACIÓN",
+          items: [
+            { href: "/panel/stands", label: "Stands", icon: <StoreIcon {...iconProps} /> },
+            { href: "/panel/reportes", label: "Reportes", icon: <FileBarChart2Icon {...iconProps} /> },
           ],
         },
       ];
@@ -89,12 +112,13 @@ function NavLink({ item, activo }: { item: NavItem; activo: boolean }) {
 
 type Props = {
   rol: RolGlobal;
+  empresaAsignada: string | null;
 };
 
-export function SidebarWeb({ rol }: Props) {
+export function SidebarWeb({ rol, empresaAsignada }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  const grupos = gruposParaRol(rol);
+  const grupos = gruposParaRol(rol, empresaAsignada);
 
   async function cerrarSesion() {
     const supabase = createClient();
@@ -113,7 +137,7 @@ export function SidebarWeb({ rol }: Props) {
         <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-primary text-primary-foreground">
           <LandmarkIcon className="h-5 w-5" strokeWidth={2.4} />
         </span>
-        SCBox
+        Chambar
       </div>
 
       {grupos.map((grupo) => (
@@ -159,7 +183,7 @@ export function SidebarWeb({ rol }: Props) {
           <div className="mb-[14px] flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-white/15">
             <SmartphoneIcon className="h-[18px] w-[18px]" strokeWidth={2} />
           </div>
-          <h4 className="mb-1 text-[17px] leading-[1.25]">Usa SCBox desde tu celular</h4>
+          <h4 className="mb-1 text-[17px] leading-[1.25]">Usa Chambar desde tu celular</h4>
           <p className="mb-[14px] text-[12px] opacity-80">
             Instálala como app para abrir cajas y registrar movimientos más rápido en el día a día.
           </p>
@@ -168,7 +192,7 @@ export function SidebarWeb({ rol }: Props) {
         {/* Versión compacta: pantallas de poco alto (ej. MacBook 14") */}
         <div className="mb-[10px] hidden items-center gap-[10px] [@media(max-height:880px)]:flex">
           <SmartphoneIcon className="h-[16px] w-[16px] shrink-0" strokeWidth={2} />
-          <span className="text-[13px] leading-[1.2] font-semibold">Usa SCBox desde tu celular</span>
+          <span className="text-[13px] leading-[1.2] font-semibold">Usa Chambar desde tu celular</span>
         </div>
 
         <button

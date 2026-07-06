@@ -1,4 +1,4 @@
-# Reglas de negocio — SCBox
+# Reglas de negocio — Chambar
 
 Fuente de verdad: `supabase/migrations/`. Este documento explica el *por qué* de cada regla para no tener que releer PL/pgSQL cada vez.
 

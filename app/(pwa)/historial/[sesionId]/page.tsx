@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { obtenerPerfilActual } from "@/lib/perfil";
 import { obtenerSesionDetalle } from "@/lib/consultas";
-import { SesionDetalleAdminOrganizacion } from "@/components/pwa/admin-organizacion/sesion-detalle";
+import { SesionDetalleAdminOrganizacion } from "@/components/pwa/historial/sesion-detalle";
 
 type Props = {
   params: Promise<{ sesionId: string }>;

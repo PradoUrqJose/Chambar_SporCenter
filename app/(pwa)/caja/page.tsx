@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { obtenerPerfilActual } from "@/lib/perfil";
 import { obtenerCajaEmpresa, obtenerCategoriasPorTipo, obtenerEmpresaAsignada, obtenerFlujoSemanal, obtenerMovimientosSemana, obtenerSesionesSemana } from "@/lib/consultas";
-import { CajaDetalleAdminOrganizacion } from "@/components/pwa/admin-organizacion/caja-detalle";
+import { CajaDetalle } from "@/components/pwa/cajas/caja-detalle";
 
 export default async function CajaPage() {
   const perfil = await obtenerPerfilActual();
@@ -22,7 +22,7 @@ export default async function CajaPage() {
     ]);
 
     return (
-      <CajaDetalleAdminOrganizacion
+      <CajaDetalle
         caja={caja}
         flujoSemanal={flujoSemanal}
         movimientos={movimientos}

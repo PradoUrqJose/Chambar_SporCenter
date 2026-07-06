@@ -1,5 +1,5 @@
 -- ============================================================
--- SCBox — Export consolidado del esquema de Supabase
+-- Chambar — Export consolidado del esquema de Supabase
 -- Generado a partir de supabase/migrations/*.sql (fuente de verdad).
 -- Este archivo es solo de referencia/contexto: no ejecutar directamente,
 -- las migraciones reales viven en supabase/migrations/.

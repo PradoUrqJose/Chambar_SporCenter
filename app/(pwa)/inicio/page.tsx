@@ -8,8 +8,8 @@ import {
   obtenerResumenOrganizacion,
   obtenerSaldoConsolidado,
 } from "@/lib/consultas";
-import { InicioAdminOrganizacion } from "@/components/pwa/admin-organizacion/inicio";
-import { InicioAdminGeneral } from "@/components/pwa/admin-general/inicio";
+import { InicioAdminOrganizacion } from "@/components/pwa/inicio/admin-organizacion";
+import { InicioAdminGeneral } from "@/components/pwa/inicio/admin-general";
 
 export default async function InicioPage() {
   const perfil = await obtenerPerfilActual();

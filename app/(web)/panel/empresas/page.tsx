@@ -1,12 +1,13 @@
 import { obtenerPerfilActual } from "@/lib/perfil";
 import { obtenerEmpresasAdmin } from "@/lib/consultas";
-import { EmpresasAdminGeneral } from "@/components/web/admin-general/empresas";
+import { puedeOperarTodas } from "@/lib/roles";
+import { EmpresasAdminGeneral } from "@/components/web/empresas/empresas";
 import { PlaceholderPanel } from "@/components/web/placeholder-panel";
 
 export default async function EmpresasPanelPage() {
   const perfil = await obtenerPerfilActual();
 
-  if (perfil?.rol_global === "admin_general") {
+  if (perfil && puedeOperarTodas(perfil.rol_global)) {
     const empresas = await obtenerEmpresasAdmin();
     return <EmpresasAdminGeneral empresas={empresas} />;
   }
