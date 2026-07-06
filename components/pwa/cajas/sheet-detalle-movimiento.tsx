@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CameraIcon, CircleCheckIcon, FileTextIcon, PaperclipIcon, XIcon } from "lucide-react";
@@ -33,15 +33,20 @@ export function SheetDetalleMovimiento({ movimiento, cajaId, onOpenChange, onAnu
   const [modoAnular, setModoAnular] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [anulando, setAnulando] = useState(false);
+  const [movimientoAnterior, setMovimientoAnterior] = useState(movimiento);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!movimiento) return;
-    setDescripcion(movimiento.descripcion ?? "");
-    setComprobanteNuevo(null);
-    setModoAnular(false);
-    setMotivo("");
-  }, [movimiento]);
+  if (movimiento !== movimientoAnterior) {
+    setMovimientoAnterior(movimiento);
+    if (movimiento) {
+      setDescripcion(movimiento.descripcion ?? "");
+      setComprobanteNuevo(null);
+      setModoAnular(false);
+      setMotivo("");
+    }
+  }
+
+  const Icono = obtenerIcono(movimiento?.categoriaIcono ?? null);
 
   async function verComprobante() {
     if (!movimiento?.comprobanteUrl) return;
@@ -132,7 +137,6 @@ export function SheetDetalleMovimiento({ movimiento, cajaId, onOpenChange, onAnu
     );
   }
 
-  const Icono = obtenerIcono(movimiento.categoriaIcono);
   const colorCategoria = movimiento.categoriaColor ?? "#9ca3af";
   const monto = formatearMontoPartes(movimiento.monto);
   const nombre = movimiento.categoriaNombre ?? movimiento.descripcion ?? "Movimiento";
@@ -179,6 +183,8 @@ export function SheetDetalleMovimiento({ movimiento, cajaId, onOpenChange, onAnu
 
               <div className="mb-4 flex items-center gap-4 rounded-2xl bg-gray-50 px-4 py-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: colorConAlpha(colorCategoria, 0.12), color: colorCategoria }}>
+                  {/* obtenerIcono selecciona entre componentes ya existentes y estables de lucide-react, no crea uno nuevo */}
+                  {/* eslint-disable-next-line react-hooks/static-components */}
                   <Icono className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">

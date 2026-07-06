@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 
 // Cliente sin cookie de sesión (service role, bypassa RLS): solo para datos
 // no sensibles por usuario que se leen dentro de unstable_cache. Next.js no
@@ -11,5 +12,5 @@ import { createClient } from "@supabase/supabase-js";
 // que el llamador ya validó (categorías, stands activos) — nunca para datos
 // que dependan de quién es el usuario actual.
 export function createServiceClient() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  return createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 }

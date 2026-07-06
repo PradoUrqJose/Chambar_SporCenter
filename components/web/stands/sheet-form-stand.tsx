@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -21,14 +21,17 @@ export function SheetFormStand({ stand, empresas, abierto, onOpenChange }: Props
   const [empresaId, setEmpresaId] = useState<string | null>(null);
   const [activo, setActivo] = useState(true);
   const [enviando, setEnviando] = useState(false);
+  const [abiertoAnterior, setAbiertoAnterior] = useState(abierto);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!abierto) return;
-    setNombre(stand?.nombre ?? "");
-    setEmpresaId(stand?.empresaId ?? null);
-    setActivo(stand?.activo ?? true);
-  }, [abierto, stand]);
+  if (abierto !== abiertoAnterior) {
+    setAbiertoAnterior(abierto);
+    if (abierto) {
+      setNombre(stand?.nombre ?? "");
+      setEmpresaId(stand?.empresaId ?? null);
+      setActivo(stand?.activo ?? true);
+    }
+  }
 
   async function alternarActivo(valor: boolean) {
     if (!stand) return;

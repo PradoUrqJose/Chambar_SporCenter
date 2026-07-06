@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -29,17 +29,20 @@ export function SheetFormCategoria({ categoria, abierto, onOpenChange }: Props) 
   const [color, setColor] = useState(COLOR_POR_DEFECTO);
   const [activa, setActiva] = useState(true);
   const [enviando, setEnviando] = useState(false);
+  const [abiertoAnterior, setAbiertoAnterior] = useState(abierto);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!abierto) return;
-    setNombre(categoria?.nombre ?? "");
-    setTipo(categoria?.tipo ?? "egreso");
-    setDescripcion(categoria?.descripcion ?? "");
-    setIcono(categoria?.icono ?? ICONO_POR_DEFECTO);
-    setColor(categoria?.color ?? COLOR_POR_DEFECTO);
-    setActiva(categoria?.activa ?? true);
-  }, [abierto, categoria]);
+  if (abierto !== abiertoAnterior) {
+    setAbiertoAnterior(abierto);
+    if (abierto) {
+      setNombre(categoria?.nombre ?? "");
+      setTipo(categoria?.tipo ?? "egreso");
+      setDescripcion(categoria?.descripcion ?? "");
+      setIcono(categoria?.icono ?? ICONO_POR_DEFECTO);
+      setColor(categoria?.color ?? COLOR_POR_DEFECTO);
+      setActiva(categoria?.activa ?? true);
+    }
+  }
 
   async function alternarActiva(valor: boolean) {
     if (!categoria) return;

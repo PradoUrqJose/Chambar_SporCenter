@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -27,15 +27,18 @@ export function SheetFondoFijoStand({ stands, abierto, modoInicial, onOpenChange
   const [monto, setMonto] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [abiertoAnterior, setAbiertoAnterior] = useState(abierto);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!abierto) return;
-    setModo(modoInicial);
-    setStandId(null);
-    setMonto("");
-    setObservaciones("");
-  }, [abierto, modoInicial]);
+  if (abierto !== abiertoAnterior) {
+    setAbiertoAnterior(abierto);
+    if (abierto) {
+      setModo(modoInicial);
+      setStandId(null);
+      setMonto("");
+      setObservaciones("");
+    }
+  }
 
   const acento = modo === "entregar" ? ENTREGA : RECEPCION;
 
@@ -54,7 +57,7 @@ export function SheetFondoFijoStand({ stands, abierto, modoInicial, onOpenChange
       const { error } = await supabase.rpc(modo === "entregar" ? "entregar_a_stand" : "recibir_de_stand", {
         p_stand_id: standId,
         p_monto: montoNumero,
-        p_observaciones: observaciones.trim() || null,
+        p_observaciones: observaciones.trim() || undefined,
       });
 
       if (error) throw error;

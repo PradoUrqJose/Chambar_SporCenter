@@ -6,6 +6,12 @@ import { obtenerPerfilActual } from "@/lib/perfil";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { RolGlobal } from "@/lib/roles";
+import type { Database } from "@/lib/supabase/database.types";
+
+// asignar_rol_usuario acepta p_rol_global null (encargado de empresa) — el
+// generador de tipos no marca nullable los parámetros de función aunque
+// Postgres sí lo permita, así que hace falta este cast puntual.
+type RolParaRpc = Database["public"]["Enums"]["rol_global"];
 
 // Server Action: no hay window.location.origin disponible (a diferencia de
 // recuperar/page.tsx, que corre en el cliente). Se arma el origen desde los
@@ -34,8 +40,8 @@ export async function invitarUsuario(input: InvitarUsuarioInput) {
 
   if (!nombre) throw new Error("El nombre es obligatorio");
   if (!email) throw new Error("El email es obligatorio");
-  if (input.rolGlobal === null && input.empresaIds.length === 0) {
-    throw new Error("Un encargado de empresa necesita al menos una empresa asignada");
+  if (input.rolGlobal === null && input.empresaIds.length !== 1) {
+    throw new Error("Un encargado de empresa necesita exactamente una empresa asignada");
   }
 
   const origen = await obtenerOrigen();
@@ -53,7 +59,7 @@ export async function invitarUsuario(input: InvitarUsuarioInput) {
   const supabase = await createClient();
   const { error: errorRol } = await supabase.rpc("asignar_rol_usuario", {
     p_usuario_id: data.user.id,
-    p_rol_global: input.rolGlobal,
+    p_rol_global: input.rolGlobal as RolParaRpc,
     p_empresa_ids: input.rolGlobal === null ? input.empresaIds : [],
   });
 
@@ -75,14 +81,14 @@ export async function actualizarUsuario(usuarioId: string, input: ActualizarUsua
   const perfil = await obtenerPerfilActual();
   if (perfil?.rol_global !== "admin_general") throw new Error("No autorizado");
 
-  if (input.rolGlobal === null && input.empresaIds.length === 0) {
-    throw new Error("Un encargado de empresa necesita al menos una empresa asignada");
+  if (input.rolGlobal === null && input.empresaIds.length !== 1) {
+    throw new Error("Un encargado de empresa necesita exactamente una empresa asignada");
   }
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("asignar_rol_usuario", {
     p_usuario_id: usuarioId,
-    p_rol_global: input.rolGlobal,
+    p_rol_global: input.rolGlobal as RolParaRpc,
     p_empresa_ids: input.rolGlobal === null ? input.empresaIds : [],
   });
 

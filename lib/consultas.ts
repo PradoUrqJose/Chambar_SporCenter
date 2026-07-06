@@ -232,7 +232,7 @@ export async function obtenerCajasEmpresas(): Promise<CajaEmpresa[]> {
 export async function obtenerEmpresaAsignada(usuarioId: string): Promise<string | null> {
   const supabase = await createClient();
 
-  const { data } = await supabase.from("asignaciones").select("empresa_id").eq("usuario_id", usuarioId).limit(1).maybeSingle();
+  const { data } = await supabase.from("asignaciones").select("empresa_id").eq("usuario_id", usuarioId).maybeSingle();
 
   return data?.empresa_id ?? null;
 }
@@ -255,7 +255,9 @@ export async function obtenerCajaEmpresa(empresaId: string): Promise<CajaEmpresa
     supabase.from("saldos_cajas").select("caja_id, saldo, abierta, sesion_abierta_id").eq("empresa_id", empresaId).eq("tipo", "empresa").single(),
   ]);
 
-  if (!empresa || !saldo) return null;
+  // La vista permite columnas null por los left join internos, pero una fila
+  // de caja tipo "empresa" siempre tiene caja_id/abierta resueltos.
+  if (!empresa || !saldo || saldo.caja_id === null || saldo.abierta === null) return null;
 
   return {
     cajaId: saldo.caja_id,

@@ -62,7 +62,7 @@ export function GraficoFlujoSemanal({ datos }: { datos: FlujoDia[] }) {
             bodyFont: { size: 11, family: "JetBrains Mono" },
             callbacks: {
               label(context) {
-                return `${context.dataset.label}: S/ ${context.parsed.y.toLocaleString()}`;
+                return `${context.dataset.label}: S/ ${(context.parsed.y ?? 0).toLocaleString()}`;
               },
             },
           },
@@ -74,7 +74,8 @@ export function GraficoFlujoSemanal({ datos }: { datos: FlujoDia[] }) {
           },
           y: {
             beginAtZero: true,
-            grid: { color: "#f1eee6", borderDash: [5, 5] },
+            grid: { color: "#f1eee6" },
+            border: { dash: [5, 5] },
             ticks: {
               callback: (value) => `S/ ${value}`,
               font: { size: 9, family: "JetBrains Mono" },

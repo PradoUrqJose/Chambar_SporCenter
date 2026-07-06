@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FileTextIcon, PaperclipIcon, XIcon } from "lucide-react";
@@ -31,16 +31,19 @@ export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categor
   const [descripcion, setDescripcion] = useState("");
   const [comprobante, setComprobante] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [abiertoAnterior, setAbiertoAnterior] = useState(abierto);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!abierto) return;
-    setModo(modoInicial);
-    setCategoriaId(null);
-    setMonto("");
-    setDescripcion("");
-    setComprobante(null);
-  }, [abierto, modoInicial]);
+  if (abierto !== abiertoAnterior) {
+    setAbiertoAnterior(abierto);
+    if (abierto) {
+      setModo(modoInicial);
+      setCategoriaId(null);
+      setMonto("");
+      setDescripcion("");
+      setComprobante(null);
+    }
+  }
 
   const categoriasPorModo: Record<Modo, CategoriaOpcion[]> = { ingreso: categoriasIngreso, egreso: categoriasEgreso };
   const categorias = categoriasPorModo[modo];
@@ -77,8 +80,8 @@ export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categor
         p_tipo: modo,
         p_monto: montoNumero,
         p_categoria_id: categoriaId,
-        p_descripcion: descripcion.trim() || null,
-        p_comprobante_url: comprobanteUrl,
+        p_descripcion: descripcion.trim() || undefined,
+        p_comprobante_url: comprobanteUrl ?? undefined,
       });
 
       if (error) throw error;

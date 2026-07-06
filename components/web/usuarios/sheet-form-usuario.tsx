@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { actualizarUsuario, cambiarEstadoUsuario, invitarUsuario } from "@/lib/acciones/usuarios";
 import { etiquetaRol, type RolGlobal } from "@/lib/roles";
 import type { EmpresaOpcion, UsuarioAdmin } from "@/lib/consultas";
@@ -27,22 +26,21 @@ export function SheetFormUsuario({ usuario, empresas, abierto, onOpenChange }: P
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [rolGlobal, setRolGlobal] = useState<RolGlobal>(null);
-  const [empresaIds, setEmpresaIds] = useState<string[]>([]);
+  const [empresaId, setEmpresaId] = useState<string | null>(null);
   const [activo, setActivo] = useState(true);
   const [enviando, setEnviando] = useState(false);
+  const [abiertoAnterior, setAbiertoAnterior] = useState(abierto);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!abierto) return;
-    setNombre(usuario?.nombre ?? "");
-    setEmail(usuario?.email ?? "");
-    setRolGlobal(usuario?.rolGlobal ?? null);
-    setEmpresaIds(usuario?.empresaIdsAsignadas ?? []);
-    setActivo(usuario?.activo ?? true);
-  }, [abierto, usuario]);
-
-  function alternarEmpresa(id: string) {
-    setEmpresaIds((actual) => (actual.includes(id) ? actual.filter((empresaId) => empresaId !== id) : [...actual, id]));
+  if (abierto !== abiertoAnterior) {
+    setAbiertoAnterior(abierto);
+    if (abierto) {
+      setNombre(usuario?.nombre ?? "");
+      setEmail(usuario?.email ?? "");
+      setRolGlobal(usuario?.rolGlobal ?? null);
+      setEmpresaId(usuario?.empresaIdsAsignadas?.[0] ?? null);
+      setActivo(usuario?.activo ?? true);
+    }
   }
 
   async function alternarActivo(valor: boolean) {
@@ -58,11 +56,12 @@ export function SheetFormUsuario({ usuario, empresas, abierto, onOpenChange }: P
   }
 
   async function guardar() {
-    if (rolGlobal === null && empresaIds.length === 0) {
-      toast.error("Elige al menos una empresa para este encargado");
+    if (rolGlobal === null && !empresaId) {
+      toast.error("Elige la empresa de este encargado");
       return;
     }
 
+    const empresaIds = empresaId ? [empresaId] : [];
     setEnviando(true);
 
     try {
@@ -152,16 +151,19 @@ export function SheetFormUsuario({ usuario, empresas, abierto, onOpenChange }: P
 
           {rolGlobal === null && (
             <div>
-              <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase">Empresas asignadas</label>
-              <div className="flex flex-col gap-1.5">
+              <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase">Empresa asignada</label>
+              <div className="flex flex-col gap-2">
                 {empresas.map((empresa) => (
-                  <label
+                  <button
                     key={empresa.id}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-border px-3.5 py-2.5 text-sm font-semibold hover:border-ring"
+                    type="button"
+                    onClick={() => setEmpresaId(empresa.id)}
+                    className={`rounded-xl border px-3.5 py-2.5 text-left text-sm font-semibold transition ${
+                      empresaId === empresa.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-ring"
+                    }`}
                   >
-                    <Checkbox checked={empresaIds.includes(empresa.id)} onCheckedChange={() => alternarEmpresa(empresa.id)} />
                     {empresa.nombre}
-                  </label>
+                  </button>
                 ))}
               </div>
             </div>

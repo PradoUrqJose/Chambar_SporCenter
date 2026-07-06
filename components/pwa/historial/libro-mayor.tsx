@@ -20,14 +20,15 @@ function parteMonto(monto: number) {
 export function LibroMayor({ movimientos, montoApertura, montoContado }: Props) {
   const [seleccionado, setSeleccionado] = useState<MovimientoParaAnular | null>(null);
 
-  const filas = useMemo(() => {
-    let saldo = montoApertura;
-
-    return movimientos.map((movimiento) => {
-      if (!movimiento.anulado) saldo += movimiento.tipo === "ingreso" ? movimiento.monto : -movimiento.monto;
-      return { movimiento, saldo };
-    });
-  }, [movimientos, montoApertura]);
+  const filas = useMemo(
+    () =>
+      movimientos.reduce<{ movimiento: MovimientoLibroMayor; saldo: number }[]>((filasHastaAhora, movimiento) => {
+        const saldoAnterior = filasHastaAhora.at(-1)?.saldo ?? montoApertura;
+        const saldo = movimiento.anulado ? saldoAnterior : saldoAnterior + (movimiento.tipo === "ingreso" ? movimiento.monto : -movimiento.monto);
+        return [...filasHastaAhora, { movimiento, saldo }];
+      }, []),
+    [movimientos, montoApertura],
+  );
 
   return (
     <div className="mx-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-md shadow-gray-200">
@@ -46,7 +47,6 @@ export function LibroMayor({ movimientos, montoApertura, montoContado }: Props) 
       </div>
 
       {filas.map(({ movimiento, saldo }) => {
-        const monto = formatearMontoPartes(movimiento.monto);
         const nombre = movimiento.categoriaNombre ?? movimiento.descripcion ?? "Movimiento";
 
         return (

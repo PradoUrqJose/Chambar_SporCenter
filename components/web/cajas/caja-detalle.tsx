@@ -339,7 +339,9 @@ function VistaSemana({
 
           {sesionesRecientes.map((sesion) => {
             const inicioMs = new Date(sesion.aperturaAt).getTime();
-            const finMs = sesion.cierreAt ? new Date(sesion.cierreAt).getTime() : Date.now();
+            // Sesión abierta: sin tope superior — todo movimiento ya cargado
+            // ocurrió antes de este render, así que basta con el inicio.
+            const finMs = sesion.cierreAt ? new Date(sesion.cierreAt).getTime() : Infinity;
             const movimientosSesion = movimientos.filter((mov) => {
               const fechaMs = new Date(mov.fecha).getTime();
               return fechaMs >= inicioMs && fechaMs <= finMs;

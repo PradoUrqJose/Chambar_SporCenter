@@ -37,17 +37,20 @@ export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categorias
   const [descripcion, setDescripcion] = useState("");
   const [comprobante, setComprobante] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [prefillAnterior, setPrefillAnterior] = useState(prefill);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!prefill) return;
-    setModo(prefill.tipo);
-    setCategoriaId(prefill.categoriaId);
-    setMonto(String(prefill.monto));
-    setDescripcion(prefill.descripcion ?? "");
-    setComprobante(null);
-    setAbierto(true);
-  }, [prefill]);
+  if (prefill !== prefillAnterior) {
+    setPrefillAnterior(prefill);
+    if (prefill) {
+      setModo(prefill.tipo);
+      setCategoriaId(prefill.categoriaId);
+      setMonto(String(prefill.monto));
+      setDescripcion(prefill.descripcion ?? "");
+      setComprobante(null);
+      setAbierto(true);
+    }
+  }
 
   const categoriasPorModo: Record<Modo, CategoriaOpcion[]> = { ingreso: categoriasIngreso, egreso: categoriasEgreso };
   const categorias = categoriasPorModo[modo];
@@ -105,8 +108,8 @@ export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categorias
         p_tipo: modo,
         p_monto: montoNumero,
         p_categoria_id: categoriaId,
-        p_descripcion: descripcion.trim() || null,
-        p_comprobante_url: comprobanteUrl,
+        p_descripcion: descripcion.trim() || undefined,
+        p_comprobante_url: comprobanteUrl ?? undefined,
       });
 
       if (error) throw error;
@@ -206,6 +209,8 @@ export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categorias
             <Select value={categoriaId} onValueChange={setCategoriaId}>
               <SelectTrigger className="mb-4 w-full justify-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3" style={{ height: "auto" }}>
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
+                  {/* obtenerIcono selecciona entre componentes ya existentes y estables de lucide-react, no crea uno nuevo */}
+                  {/* eslint-disable-next-line react-hooks/static-components */}
                   <IconoCategoriaActual className="h-4 w-4" style={{ color: categoriaActual ? tema.accent : "#6b7280" }} />
                 </span>
                 <SelectValue placeholder="Elige una categoría" className="flex-1 text-left font-semibold text-gray-800">

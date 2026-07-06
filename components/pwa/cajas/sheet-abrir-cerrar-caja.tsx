@@ -107,7 +107,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
       const { error } = await supabase.rpc("abrir_caja", {
         p_caja_id: cajaId,
         p_monto_apertura: monto,
-        p_observaciones: observaciones.trim() || null,
+        p_observaciones: observaciones.trim() || undefined,
       });
 
       if (error) throw error;
@@ -137,7 +137,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
       const { error } = await supabase.rpc("cerrar_caja", {
         p_sesion_id: sesionAbiertaId,
         p_monto_contado: montoContado,
-        p_observaciones: observaciones.trim() || null,
+        p_observaciones: observaciones.trim() || undefined,
       });
 
       if (error) throw error;

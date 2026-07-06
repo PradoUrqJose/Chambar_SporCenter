@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -23,15 +23,18 @@ export function SheetFormEmpresa({ empresa, abierto, onOpenChange }: Props) {
   const [color, setColor] = useState(COLOR_POR_DEFECTO);
   const [activa, setActiva] = useState(true);
   const [enviando, setEnviando] = useState(false);
+  const [abiertoAnterior, setAbiertoAnterior] = useState(abierto);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!abierto) return;
-    setNombre(empresa?.nombre ?? "");
-    setRuc(empresa?.ruc ?? "");
-    setColor(empresa?.color ?? COLOR_POR_DEFECTO);
-    setActiva(empresa?.activa ?? true);
-  }, [abierto, empresa]);
+  if (abierto !== abiertoAnterior) {
+    setAbiertoAnterior(abierto);
+    if (abierto) {
+      setNombre(empresa?.nombre ?? "");
+      setRuc(empresa?.ruc ?? "");
+      setColor(empresa?.color ?? COLOR_POR_DEFECTO);
+      setActiva(empresa?.activa ?? true);
+    }
+  }
 
   async function alternarActiva(valor: boolean) {
     if (!empresa) return;

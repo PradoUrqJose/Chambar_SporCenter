@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { MinusIcon, PlusIcon, XIcon } from "lucide-react";
@@ -50,18 +50,21 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
   const [observaciones, setObservaciones] = useState("");
   const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [abiertoAnterior, setAbiertoAnterior] = useState(abierto);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!abierto) return;
-    setMontoApertura(montoReferencia > 0 ? montoReferencia.toFixed(2) : "");
-    setModoConteo("denominacion");
-    setFilasActivas([]);
-    setCantidades({});
-    setMontoDirecto("");
-    setObservaciones("");
-    setConfirmando(false);
-  }, [abierto, montoReferencia]);
+  if (abierto !== abiertoAnterior) {
+    setAbiertoAnterior(abierto);
+    if (abierto) {
+      setMontoApertura(montoReferencia > 0 ? montoReferencia.toFixed(2) : "");
+      setModoConteo("denominacion");
+      setFilasActivas([]);
+      setCantidades({});
+      setMontoDirecto("");
+      setObservaciones("");
+      setConfirmando(false);
+    }
+  }
 
   const montoContadoDenominacion = useMemo(
     () => filasActivas.reduce((total, valor) => total + valor * (cantidades[valor] ?? 0), 0),
@@ -109,7 +112,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
       const { error } = await supabase.rpc("abrir_caja", {
         p_caja_id: cajaId,
         p_monto_apertura: monto,
-        p_observaciones: observaciones.trim() || null,
+        p_observaciones: observaciones.trim() || undefined,
       });
 
       if (error) throw error;
@@ -139,7 +142,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
       const { error } = await supabase.rpc("cerrar_caja", {
         p_sesion_id: sesionAbiertaId,
         p_monto_contado: montoContado,
-        p_observaciones: observaciones.trim() || null,
+        p_observaciones: observaciones.trim() || undefined,
       });
 
       if (error) throw error;
