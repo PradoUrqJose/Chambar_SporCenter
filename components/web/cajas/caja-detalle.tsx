@@ -260,10 +260,9 @@ function VistaSesionActual({
         </div>
       </div>
 
-      <div className="basis-[300px] shrink-0 self-start rounded-[20px] bg-card p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)] max-[900px]:basis-full">
-        <h3 className="text-[19px] font-bold tracking-tight min-[1513px]:text-[22px]">Acciones</h3>
-        <p className="mt-1 text-[13px] font-medium text-muted-foreground min-[1513px]:text-[15px]">Registra un movimiento en la sesión activa</p>
-        <div className="mt-[22px]">
+      <div className="basis-[220px] shrink-0 self-start rounded-[20px] bg-card p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)] max-[900px]:basis-full">
+        <h3 className="text-sm font-bold tracking-tight">Acciones</h3>
+        <div className="mt-3">
           <AccionesCaja
             variante="tarjetas"
             cajaId={caja.cajaId}
@@ -277,7 +276,7 @@ function VistaSesionActual({
         </div>
       </div>
 
-      <div className="min-w-0 basis-[calc(100%_-_318px)] grow max-[900px]:basis-full min-[1513px]:basis-full">
+      <div className="min-w-0 basis-[calc(100%_-_238px)] grow max-[900px]:basis-full min-[1513px]:basis-full">
         <CardMovimientosSesion sesion={sesionActual} saldoActual={caja.saldo} urlsComprobantes={urlsComprobantes} />
       </div>
     </div>

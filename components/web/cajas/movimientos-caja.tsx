@@ -14,7 +14,7 @@ const INGRESO = "#1f7a4d";
 const EGRESO = "#dc2626";
 const NEUTRO = "#6b7280";
 const CATEGORIA_POR_DEFECTO = "#9ca3af";
-const POR_PAGINA = 5;
+const POR_PAGINA = 4;
 
 function Encabezado() {
   return (
