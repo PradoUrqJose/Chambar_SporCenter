@@ -33,19 +33,7 @@ const EGRESO = "#dc2626";
 const NEUTRO = "#8a9099";
 const RING_VACIO = "#eceef0";
 
-export function CajaDetalle({
-  caja,
-  flujoSemanal,
-  movimientos,
-  sesionesSemana,
-  sesionActual,
-  fechaHoy,
-  urlsComprobantes,
-  categoriasIngreso,
-  categoriasEgreso,
-  stands,
-  mostrarVolver = true,
-}: Props) {
+export function CajaDetalle({ caja, flujoSemanal, movimientos, sesionesSemana, sesionActual, fechaHoy, urlsComprobantes, categoriasIngreso, categoriasEgreso, stands, mostrarVolver = true }: Props) {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out motion-reduce:animate-none">
       <SelectorVistaCaja
@@ -233,7 +221,7 @@ function VistaSesionActual({
         </div>
       </div>
 
-      <div className="basis-[220px] shrink-0 self-start rounded-[20px] bg-card p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)] max-[900px]:basis-full">
+      <div className="relative flex basis-55 shrink-0 flex-col justify-between self-start rounded-[20px] bg-card p-4 shadow-[0_10px_30px_rgba(0,0,0,0.06)] *:max-[900px]:basis-full min-[1513px]:basis-0 min-[1513px]:min-w-55 min-[1513px]:grow min-[1513px]:self-stretch">
         <h3 className="text-sm font-bold tracking-tight">Acciones</h3>
         <div className="mt-3">
           <AccionesCaja

@@ -18,7 +18,25 @@ const POR_PAGINA = 4;
 
 type CampoOrdenSesion = "movimiento" | "responsable" | "fecha" | "monto" | "tipo";
 
-function valorOrdenSesion(mov: MovimientoLibroMayor, campo: CampoOrdenSesion): string | number {
+type FilaSesion = { kind: "apertura" } | { kind: "movimiento"; mov: MovimientoLibroMayor };
+
+function valorOrdenSesion(fila: FilaSesion, campo: CampoOrdenSesion, sesion: SesionDetalle): string | number {
+  if (fila.kind === "apertura") {
+    switch (campo) {
+      case "movimiento":
+        return "apertura de caja";
+      case "responsable":
+        return (sesion.abiertaPor ?? "").toLowerCase();
+      case "fecha":
+        return new Date(sesion.aperturaAt).getTime();
+      case "monto":
+        return sesion.montoApertura;
+      case "tipo":
+        return "apertura";
+    }
+  }
+
+  const mov = fila.mov;
   switch (campo) {
     case "movimiento":
       return (mov.categoriaNombre ?? mov.descripcion ?? "Movimiento").toLowerCase();
@@ -94,21 +112,22 @@ export function CardMovimientosSesion({
     setPagina(1);
   }
 
-  const movimientosOrdenados = useMemo(() => {
+  const filasOrdenadas = useMemo(() => {
+    const filas: FilaSesion[] = [{ kind: "apertura" }, ...sesion.movimientos.map((mov) => ({ kind: "movimiento" as const, mov }))];
     const signo = ordenAsc ? 1 : -1;
-    return [...sesion.movimientos].sort((a, b) => {
-      const va = valorOrdenSesion(a, ordenPor);
-      const vb = valorOrdenSesion(b, ordenPor);
+    return filas.sort((a, b) => {
+      const va = valorOrdenSesion(a, ordenPor, sesion);
+      const vb = valorOrdenSesion(b, ordenPor, sesion);
       if (va < vb) return -1 * signo;
       if (va > vb) return 1 * signo;
       return 0;
     });
-  }, [sesion.movimientos, ordenPor, ordenAsc]);
+  }, [sesion, ordenPor, ordenAsc]);
 
-  const totalPaginas = Math.max(1, Math.ceil(movimientosOrdenados.length / POR_PAGINA));
+  const totalPaginas = Math.max(1, Math.ceil(filasOrdenadas.length / POR_PAGINA));
   const paginaSegura = Math.min(pagina, totalPaginas);
   const inicio = (paginaSegura - 1) * POR_PAGINA;
-  const movimientosPagina = movimientosOrdenados.slice(inicio, inicio + POR_PAGINA);
+  const filasPagina = filasOrdenadas.slice(inicio, inicio + POR_PAGINA);
 
   return (
     <div className="flex h-full flex-col rounded-[20px] bg-card p-[6px_22px_10px] shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
@@ -118,42 +137,39 @@ export function CardMovimientosSesion({
         <table className="w-full border-collapse">
           <EncabezadoSesion ordenPor={ordenPor} ordenAsc={ordenAsc} onOrdenar={ordenar} />
           <tbody>
-            <tr>
-              <td className="border-b border-border p-2 text-[13px] min-[1513px]:text-[15px]">
-                <div className="flex items-center gap-3 font-medium">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: colorConAlpha(NEUTRO, 0.12), color: NEUTRO }}>
-                    <WalletIcon className="h-4 w-4" />
-                  </span>
-                  <span className="truncate">Apertura de caja</span>
-                </div>
-              </td>
-              <td className="border-b border-border p-2 text-[13px] text-muted-foreground min-[1513px]:text-[15px]">—</td>
-              <td className="border-b border-border p-2 text-[13px] text-muted-foreground min-[1513px]:text-[15px]">{sesion.abiertaPor ?? "—"}</td>
-              <td className="border-b border-border p-2 text-[13px] whitespace-nowrap text-muted-foreground min-[1513px]:text-[15px]">
-                <span className="block">{formatearFecha(sesion.aperturaAt)}</span>
-                <span className="block text-[11px] min-[1513px]:text-[13px]">{formatearHora(sesion.aperturaAt)}</span>
-              </td>
-              <td className="border-b border-border p-2 text-center text-[13px] text-muted-foreground min-[1513px]:text-[15px]">—</td>
-              <td className="border-b border-border p-2 text-right font-mono text-[13px] font-bold whitespace-nowrap min-[1513px]:text-[15px]">
-                S/ {montoApertura.entero}.{montoApertura.decimales}
-              </td>
-              <td className="border-b border-border p-2 text-right">
-                <span className="inline-flex items-center gap-1.5 text-[12px] font-medium whitespace-nowrap min-[1513px]:text-[14px]" style={{ color: NEUTRO }}>
-                  <span className="h-2 w-2 rounded-full" style={{ background: NEUTRO }} />
-                  Apertura
-                </span>
-              </td>
-            </tr>
+            {filasPagina.map((fila) => {
+              if (fila.kind === "apertura") {
+                return (
+                  <tr key="apertura">
+                    <td className="border-b border-border p-2 text-[13px] min-[1513px]:text-[15px]">
+                      <div className="flex items-center gap-3 font-medium">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: colorConAlpha(NEUTRO, 0.12), color: NEUTRO }}>
+                          <WalletIcon className="h-4 w-4" />
+                        </span>
+                        <span className="truncate">Apertura de caja</span>
+                      </div>
+                    </td>
+                    <td className="border-b border-border p-2 text-[13px] text-muted-foreground min-[1513px]:text-[15px]">—</td>
+                    <td className="border-b border-border p-2 text-[13px] text-muted-foreground min-[1513px]:text-[15px]">{sesion.abiertaPor ?? "—"}</td>
+                    <td className="border-b border-border p-2 text-[13px] whitespace-nowrap text-muted-foreground min-[1513px]:text-[15px]">
+                      <span className="block">{formatearFecha(sesion.aperturaAt)}</span>
+                      <span className="block text-[11px] min-[1513px]:text-[13px]">{formatearHora(sesion.aperturaAt)}</span>
+                    </td>
+                    <td className="border-b border-border p-2 text-center text-[13px] text-muted-foreground min-[1513px]:text-[15px]">—</td>
+                    <td className="border-b border-border p-2 text-right font-mono text-[13px] font-bold whitespace-nowrap min-[1513px]:text-[15px]">
+                      S/ {montoApertura.entero}.{montoApertura.decimales}
+                    </td>
+                    <td className="border-b border-border p-2 text-right">
+                      <span className="inline-flex items-center gap-1.5 text-[12px] font-medium whitespace-nowrap min-[1513px]:text-[14px]" style={{ color: NEUTRO }}>
+                        <span className="h-2 w-2 rounded-full" style={{ background: NEUTRO }} />
+                        Apertura
+                      </span>
+                    </td>
+                  </tr>
+                );
+              }
 
-            {movimientosPagina.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-4 text-center text-sm text-muted-foreground">
-                  Sin movimientos en esta sesión todavía.
-                </td>
-              </tr>
-            )}
-
-            {movimientosPagina.map((mov) => {
+              const mov = fila.mov;
               const Icono = obtenerIcono(mov.categoriaIcono);
               const colorCategoria = mov.categoriaColor ?? CATEGORIA_POR_DEFECTO;
               const nombre = mov.categoriaNombre ?? mov.descripcion ?? "Movimiento";
