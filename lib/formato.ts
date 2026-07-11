@@ -45,6 +45,29 @@ export function formatearFecha(fechaISO: string): string {
   return `${dia} ${MESES_CORTOS[mes]}`;
 }
 
+const formateadorDatetimeLocalLima = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Lima",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+// Valor inicial para un <input type="datetime-local"> mostrando la hora
+// actual en Lima (no en la zona horaria del navegador de quien lo usa).
+export function ahoraLimaDatetimeLocal(): string {
+  const partes = formateadorDatetimeLocalLima.formatToParts(new Date());
+  const obtener = (tipo: string) => partes.find((parte) => parte.type === tipo)!.value;
+  return `${obtener("year")}-${obtener("month")}-${obtener("day")}T${obtener("hour")}:${obtener("minute")}`;
+}
+
+// Lima no tiene horario de verano: el offset -05:00 es fijo todo el año.
+export function datetimeLocalAIsoLima(valor: string): string {
+  return `${valor}:00-05:00`;
+}
+
 export function obtenerIniciales(nombre: string): string {
   const palabras = nombre.trim().split(/\s+/);
   if (palabras.length === 1) return palabras[0].slice(0, 2).toUpperCase();

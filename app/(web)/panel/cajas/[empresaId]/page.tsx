@@ -73,6 +73,7 @@ export default async function CajaEmpresaPanelPage({ params }: Props) {
       categoriasEgreso={categoriasEgreso}
       stands={stands}
       mostrarVolver={!esAdminEmpresa}
+      esAdmin={puedeVerCualquierCaja}
     />
   );
 }

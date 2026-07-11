@@ -25,6 +25,9 @@ type Props = {
   stands: StandOpcion[];
   // admin_empresa solo tiene esta única caja: no hay lista a la que volver.
   mostrarVolver?: boolean;
+  // Solo admin_general/admin_organizacion pueden elegir una fecha pasada
+  // (para cargar historial); el resto siempre usa la fecha/hora actual.
+  esAdmin?: boolean;
 };
 
 const COLOR_POR_DEFECTO = "#1f7a4d";
@@ -33,7 +36,20 @@ const EGRESO = "#dc2626";
 const NEUTRO = "#8a9099";
 const RING_VACIO = "#eceef0";
 
-export function CajaDetalle({ caja, flujoSemanal, movimientos, sesionesSemana, sesionActual, fechaHoy, urlsComprobantes, categoriasIngreso, categoriasEgreso, stands, mostrarVolver = true }: Props) {
+export function CajaDetalle({
+  caja,
+  flujoSemanal,
+  movimientos,
+  sesionesSemana,
+  sesionActual,
+  fechaHoy,
+  urlsComprobantes,
+  categoriasIngreso,
+  categoriasEgreso,
+  stands,
+  mostrarVolver = true,
+  esAdmin = false,
+}: Props) {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out motion-reduce:animate-none">
       <SelectorVistaCaja
@@ -49,6 +65,7 @@ export function CajaDetalle({ caja, flujoSemanal, movimientos, sesionesSemana, s
               categoriasIngreso={categoriasIngreso}
               categoriasEgreso={categoriasEgreso}
               stands={stands}
+              esAdmin={esAdmin}
             />
           )
         }
@@ -61,6 +78,7 @@ export function CajaDetalle({ caja, flujoSemanal, movimientos, sesionesSemana, s
             urlsComprobantes={urlsComprobantes}
             categoriasIngreso={categoriasIngreso}
             categoriasEgreso={categoriasEgreso}
+            esAdmin={esAdmin}
           />
         }
       />
@@ -76,6 +94,7 @@ function VistaSesionActual({
   categoriasIngreso,
   categoriasEgreso,
   stands,
+  esAdmin,
 }: {
   caja: CajaEmpresaDetalle;
   sesionActual: SesionDetalle;
@@ -84,6 +103,7 @@ function VistaSesionActual({
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
   stands: StandOpcion[];
+  esAdmin: boolean;
 }) {
   const color = caja.color ?? COLOR_POR_DEFECTO;
   const saldo = formatearMontoPartes(caja.saldo);
@@ -233,6 +253,7 @@ function VistaSesionActual({
             categoriasIngreso={categoriasIngreso}
             categoriasEgreso={categoriasEgreso}
             stands={stands}
+            esAdmin={esAdmin}
           />
         </div>
       </div>
@@ -252,6 +273,7 @@ function VistaSemana({
   urlsComprobantes,
   categoriasIngreso,
   categoriasEgreso,
+  esAdmin,
 }: {
   caja: CajaEmpresaDetalle;
   flujoSemanal: FlujoDia[];
@@ -260,6 +282,7 @@ function VistaSemana({
   urlsComprobantes: Map<string, string>;
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
+  esAdmin: boolean;
 }) {
   const color = caja.color ?? COLOR_POR_DEFECTO;
   const saldo = formatearMontoPartes(caja.saldo);
@@ -327,6 +350,7 @@ function VistaSemana({
             montoReferencia={caja.saldo}
             categoriasIngreso={categoriasIngreso}
             categoriasEgreso={categoriasEgreso}
+            esAdmin={esAdmin}
           />
         </div>
       </div>

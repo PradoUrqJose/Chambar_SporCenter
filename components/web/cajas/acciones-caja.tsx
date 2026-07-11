@@ -22,6 +22,9 @@ type Props = {
   // "tarjetas": Ingreso/Egreso (+ Entregar/Recibir si hay stands) como tarjetas
   // circulares en grid + Cerrar de ancho completo.
   variante?: "compacta" | "tarjetas";
+  // Solo admin_general/admin_organizacion pueden elegir una fecha pasada
+  // (para cargar historial); el resto siempre usa la fecha/hora actual.
+  esAdmin?: boolean;
 };
 
 const INGRESO = "#1f7a4d";
@@ -31,7 +34,7 @@ const SLATE = "#40566e";
 const ENTREGA = "#7c3aed";
 const RECEPCION = "#0891b2";
 
-export function AccionesCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia, categoriasIngreso, categoriasEgreso, stands = [], variante = "compacta" }: Props) {
+export function AccionesCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia, categoriasIngreso, categoriasEgreso, stands = [], variante = "compacta", esAdmin = false }: Props) {
   const [dialogoMovimiento, setDialogoMovimiento] = useState<"ingreso" | "egreso" | null>(null);
   const [dialogoStand, setDialogoStand] = useState<"entregar" | "recibir" | null>(null);
   const [dialogoCaja, setDialogoCaja] = useState(false);
@@ -99,9 +102,18 @@ export function AccionesCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia
         categoriasIngreso={categoriasIngreso}
         categoriasEgreso={categoriasEgreso}
         onOpenChange={(abierto) => setDialogoMovimiento(abierto ? (dialogoMovimiento ?? "ingreso") : null)}
+        esAdmin={esAdmin}
       />
 
-      <SheetAbrirCerrarCaja cajaId={cajaId} sesionAbiertaId={sesionAbiertaId} abierta={abierta} montoReferencia={montoReferencia} abierto={dialogoCaja} onOpenChange={setDialogoCaja} />
+      <SheetAbrirCerrarCaja
+        cajaId={cajaId}
+        sesionAbiertaId={sesionAbiertaId}
+        abierta={abierta}
+        montoReferencia={montoReferencia}
+        abierto={dialogoCaja}
+        onOpenChange={setDialogoCaja}
+        esAdmin={esAdmin}
+      />
 
       {stands.length > 0 && (
         <SheetFondoFijoStand

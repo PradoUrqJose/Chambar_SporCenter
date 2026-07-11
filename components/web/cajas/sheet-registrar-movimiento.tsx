@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { obtenerIcono } from "@/lib/iconos";
 import type { CategoriaOpcion } from "@/lib/consultas";
+import { ahoraLimaDatetimeLocal, datetimeLocalAIsoLima } from "@/lib/formato";
 
 type Modo = "ingreso" | "egreso";
 
@@ -19,17 +20,21 @@ type Props = {
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
   onOpenChange: (abierto: boolean) => void;
+  // Solo admin_general/admin_organizacion pueden elegir una fecha pasada
+  // (para cargar historial); el resto siempre usa la fecha/hora actual.
+  esAdmin?: boolean;
 };
 
 const INGRESO = "#1f7a4d";
 const EGRESO = "#dc2626";
 
-export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categoriasIngreso, categoriasEgreso, onOpenChange }: Props) {
+export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categoriasIngreso, categoriasEgreso, onOpenChange, esAdmin = false }: Props) {
   const [modo, setModo] = useState<Modo>(modoInicial);
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
   const [monto, setMonto] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [comprobante, setComprobante] = useState<File | null>(null);
+  const [fecha, setFecha] = useState(ahoraLimaDatetimeLocal());
   const [enviando, setEnviando] = useState(false);
   const [abiertoAnterior, setAbiertoAnterior] = useState(abierto);
   const router = useRouter();
@@ -42,6 +47,7 @@ export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categor
       setMonto("");
       setDescripcion("");
       setComprobante(null);
+      setFecha(ahoraLimaDatetimeLocal());
     }
   }
 
@@ -82,6 +88,7 @@ export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categor
         p_categoria_id: categoriaId,
         p_descripcion: descripcion.trim() || undefined,
         p_comprobante_url: comprobanteUrl ?? undefined,
+        p_fecha: esAdmin ? datetimeLocalAIsoLima(fecha) : undefined,
       });
 
       if (error) throw error;
@@ -178,6 +185,19 @@ export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categor
                 className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm focus:border-ring focus:bg-card focus:outline-none"
               />
             </div>
+
+            {esAdmin && (
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase">Fecha y hora</label>
+                <input
+                  type="datetime-local"
+                  value={fecha}
+                  onChange={(evento) => setFecha(evento.target.value)}
+                  className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm focus:border-ring focus:bg-card focus:outline-none"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Solo administradores pueden elegir una fecha pasada, para cargar historial.</p>
+              </div>
+            )}
 
             <div>
               <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase">Comprobante</label>

@@ -7,7 +7,7 @@ import { MinusIcon, PlusIcon, XIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { formatearMontoPartes } from "@/lib/formato";
+import { ahoraLimaDatetimeLocal, datetimeLocalAIsoLima, formatearMontoPartes } from "@/lib/formato";
 
 type Props = {
   cajaId: string;
@@ -16,6 +16,9 @@ type Props = {
   montoReferencia: number;
   abierto: boolean;
   onOpenChange: (abierto: boolean) => void;
+  // Solo admin_general/admin_organizacion pueden elegir una fecha pasada
+  // (para cargar historial); el resto siempre usa la fecha/hora actual.
+  esAdmin?: boolean;
 };
 
 type Denominacion = { valor: number; tipo: "billete" | "moneda" };
@@ -41,13 +44,14 @@ function etiquetaDenominacion(valor: number) {
   return `S/ ${valor % 1 === 0 ? valor : valor.toFixed(2)}`;
 }
 
-export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia, abierto, onOpenChange }: Props) {
+export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia, abierto, onOpenChange, esAdmin = false }: Props) {
   const [montoApertura, setMontoApertura] = useState("");
   const [modoConteo, setModoConteo] = useState<ModoConteo>("denominacion");
   const [filasActivas, setFilasActivas] = useState<number[]>([]);
   const [cantidades, setCantidades] = useState<Record<number, number>>({});
   const [montoDirecto, setMontoDirecto] = useState("");
   const [observaciones, setObservaciones] = useState("");
+  const [fecha, setFecha] = useState(ahoraLimaDatetimeLocal());
   const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [abiertoAnterior, setAbiertoAnterior] = useState(abierto);
@@ -62,6 +66,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
       setCantidades({});
       setMontoDirecto("");
       setObservaciones("");
+      setFecha(ahoraLimaDatetimeLocal());
       setConfirmando(false);
     }
   }
@@ -113,6 +118,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
         p_caja_id: cajaId,
         p_monto_apertura: monto,
         p_observaciones: observaciones.trim() || undefined,
+        p_fecha: esAdmin ? datetimeLocalAIsoLima(fecha) : undefined,
       });
 
       if (error) throw error;
@@ -143,6 +149,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
         p_sesion_id: sesionAbiertaId,
         p_monto_contado: montoContado,
         p_observaciones: observaciones.trim() || undefined,
+        p_fecha: esAdmin ? datetimeLocalAIsoLima(fecha) : undefined,
       });
 
       if (error) throw error;
@@ -291,6 +298,19 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
                 </div>
               </div>
 
+              {esAdmin && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase">Fecha y hora de cierre</label>
+                  <input
+                    type="datetime-local"
+                    value={fecha}
+                    onChange={(evento) => setFecha(evento.target.value)}
+                    className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm focus:border-ring focus:bg-card focus:outline-none"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">Solo administradores pueden elegir una fecha pasada, para cargar historial.</p>
+                </div>
+              )}
+
               <div>
                 <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase">Observaciones</label>
                 <Textarea value={observaciones} onChange={(evento) => setObservaciones(evento.target.value)} placeholder="Opcional" />
@@ -325,6 +345,19 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
                   Sugerido: S/ {montoSugeridoPartes.entero}.{montoSugeridoPartes.decimales} (último cierre)
                 </p>
               </div>
+
+              {esAdmin && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase">Fecha y hora de apertura</label>
+                  <input
+                    type="datetime-local"
+                    value={fecha}
+                    onChange={(evento) => setFecha(evento.target.value)}
+                    className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm focus:border-ring focus:bg-card focus:outline-none"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">Solo administradores pueden elegir una fecha pasada, para cargar historial.</p>
+                </div>
+              )}
 
               <div>
                 <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase">Observaciones</label>
