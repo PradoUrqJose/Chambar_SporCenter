@@ -12,6 +12,7 @@ import {
   BuildingsIcon,
   StorefrontIcon,
   TagIcon,
+  CreditCardIcon,
   ChartBarIcon,
   GearIcon,
   SignOutIcon,
@@ -27,7 +28,7 @@ type NavGroup = { label: string; items: NavItem[] };
 
 const iconProps = { className: "h-[19px] w-[19px]" };
 
-function gruposParaRol(rol: RolGlobal, empresaAsignada: string | null): NavGroup[] {
+function gruposParaRol(rol: RolGlobal, empresaAsignadaSlug: string | null): NavGroup[] {
   switch (rol) {
     case "admin_organizacion":
       // Igual que admin_general, excepto Usuarios (eso sigue siendo
@@ -67,6 +68,7 @@ function gruposParaRol(rol: RolGlobal, empresaAsignada: string | null): NavGroup
             { href: "/panel/empresas", label: "Empresas", icon: BuildingsIcon },
             { href: "/panel/stands", label: "Stands", icon: StorefrontIcon },
             { href: "/panel/categorias", label: "Categorías", icon: TagIcon },
+            { href: "/panel/medios-pago", label: "Medios de pago", icon: CreditCardIcon },
             { href: "/panel/usuarios", label: "Usuarios", icon: UsersIcon },
             { href: "/panel/reportes", label: "Reportes", icon: ChartBarIcon },
           ],
@@ -75,14 +77,14 @@ function gruposParaRol(rol: RolGlobal, empresaAsignada: string | null): NavGroup
     case null:
       // admin_empresa: mismas vistas de Inicio/Cajas/Historial que admin_general
       // (acotadas a su única empresa/caja) + único CRUD propio: Stands.
-      // El link va directo a /panel/cajas/{empresaId} para no pasar por el
+      // El link va directo a /panel/cajas/{empresaSlug} para no pasar por el
       // redirect de /panel/cajas (ida y vuelta al servidor sin necesidad).
       return [
         {
           label: "MENÚ",
           items: [
             { href: "/panel/inicio", label: "Inicio", icon: SquaresFourIcon },
-            { href: empresaAsignada ? `/panel/cajas/${empresaAsignada}` : "/panel/cajas", label: "Caja", icon: WalletIcon },
+            { href: empresaAsignadaSlug ? `/panel/cajas/${empresaAsignadaSlug}` : "/panel/cajas", label: "Caja", icon: WalletIcon },
             { href: "/panel/historial", label: "Historial", icon: HistoryIcon },
           ],
         },
@@ -116,7 +118,7 @@ function NavLink({ item, activo, onRef }: { item: NavItem; activo: boolean; onRe
 
 type Props = {
   rol: RolGlobal;
-  empresaAsignada: string | null;
+  empresaAsignadaSlug: string | null;
 };
 
 const AJUSTES_HREF = "/panel/ajustes";
@@ -125,10 +127,10 @@ function estaActivo(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function SidebarWeb({ rol, empresaAsignada }: Props) {
+export function SidebarWeb({ rol, empresaAsignadaSlug }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  const grupos = gruposParaRol(rol, empresaAsignada);
+  const grupos = gruposParaRol(rol, empresaAsignadaSlug);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const linkRefs = useRef(new Map<string, HTMLAnchorElement>());

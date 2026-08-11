@@ -8,12 +8,15 @@ import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { formatearMontoPartes } from "@/lib/formato";
+import { obtenerIcono } from "@/lib/iconos";
+import type { EsperadoMedioSesion } from "@/lib/consultas";
 
 type Props = {
   cajaId: string;
   sesionAbiertaId: string | null;
   abierta: boolean;
   montoReferencia: number;
+  esperadosPorMedio: EsperadoMedioSesion[];
   color: string;
 };
 
@@ -38,13 +41,14 @@ function etiquetaDenominacion(valor: number) {
   return `S/ ${valor % 1 === 0 ? valor : valor.toFixed(2)}`;
 }
 
-export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia, color }: Props) {
+export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia, esperadosPorMedio, color }: Props) {
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const [montoApertura, setMontoApertura] = useState("");
   const [modoConteo, setModoConteo] = useState<ModoConteo>("denominacion");
   const [filasActivas, setFilasActivas] = useState<number[]>([]);
   const [cantidades, setCantidades] = useState<Record<number, number>>({});
   const [montoDirecto, setMontoDirecto] = useState("");
+  const [contadosMedios, setContadosMedios] = useState<Record<string, string>>({});
   const [observaciones, setObservaciones] = useState("");
   const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -59,12 +63,25 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
   const cuadrada = Math.abs(diferencia) < 0.005;
   const disponibles = DENOMINACIONES.filter((d) => !filasActivas.includes(d.valor));
 
+  const diferenciasMedios = esperadosPorMedio.map((medio) => {
+    const contado = Number(contadosMedios[medio.medioPagoId]) || 0;
+    return { ...medio, contado, diferencia: contado - medio.esperado };
+  });
+  const hayDescuadreMedios = diferenciasMedios.some((m) => Math.abs(m.diferencia) >= 0.005);
+  const todoCuadrado = cuadrada && !hayDescuadreMedios;
+
+  function cambiarContadoMedio(medioPagoId: string, texto: string) {
+    setContadosMedios((actual) => ({ ...actual, [medioPagoId]: texto.replace(/[^0-9.]/g, "") }));
+    setConfirmando(false);
+  }
+
   function abrirSheet() {
     setMontoApertura(montoReferencia > 0 ? montoReferencia.toFixed(2) : "");
     setModoConteo("denominacion");
     setFilasActivas([]);
     setCantidades({});
     setMontoDirecto("");
+    setContadosMedios(Object.fromEntries(esperadosPorMedio.map((m) => [m.medioPagoId, m.esperado.toFixed(2)])));
     setObservaciones("");
     setConfirmando(false);
     setSheetAbierto(true);
@@ -125,7 +142,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
   async function confirmarCerrarCaja() {
     if (!sesionAbiertaId) return;
 
-    if (!cuadrada && !confirmando) {
+    if (!todoCuadrado && !confirmando) {
       setConfirmando(true);
       return;
     }
@@ -138,6 +155,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
         p_sesion_id: sesionAbiertaId,
         p_monto_contado: montoContado,
         p_observaciones: observaciones.trim() || undefined,
+        p_arqueos: diferenciasMedios.map((m) => ({ medio_pago_id: m.medioPagoId, monto_contado: m.contado })),
       });
 
       if (error) throw error;
@@ -300,6 +318,50 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
                     )}
                   </div>
                 </div>
+
+                {esperadosPorMedio.length > 0 && (
+                  <div className="mb-4">
+                    <p className="mb-2 text-xs font-bold text-gray-500 uppercase">Otros medios</p>
+                    <div className="flex flex-col gap-2">
+                      {diferenciasMedios.map((medio) => {
+                        const Icono = obtenerIcono(medio.icono);
+                        const colorMedio = medio.color ?? "#7c3aed";
+                        const cuadradoMedio = Math.abs(medio.diferencia) < 0.005;
+                        const partesEsperado = formatearMontoPartes(medio.esperado);
+
+                        return (
+                          <div key={medio.medioPagoId} className="flex items-center gap-2.5 rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2.5">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${colorMedio}1a`, color: colorMedio }}>
+                              <Icono className="h-4 w-4" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-gray-800">{medio.nombre}</p>
+                              <p className="text-xs text-gray-400">
+                                Esperado S/ {partesEsperado.entero}.{partesEsperado.decimales}
+                              </p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <span className="text-xs font-bold text-gray-400">S/</span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={contadosMedios[medio.medioPagoId] ?? ""}
+                                onChange={(evento) => cambiarContadoMedio(medio.medioPagoId, evento.target.value)}
+                                className="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-right text-sm font-bold text-gray-800 focus:border-gray-400 focus:outline-none"
+                              />
+                            </div>
+                            <span
+                              className="shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase"
+                              style={{ backgroundColor: cuadradoMedio ? "#e6f4ec" : medio.diferencia < 0 ? "#fde8e8" : "#fef3e2", color: cuadradoMedio ? "#1f7a4d" : medio.diferencia < 0 ? "#E7000B" : "#d97706" }}
+                            >
+                              {cuadradoMedio ? "OK" : medio.diferencia < 0 ? "Falta" : "Sobra"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <label className="mb-2 block text-xs font-bold text-gray-500 uppercase">Observaciones</label>
                 <Textarea value={observaciones} onChange={(evento) => setObservaciones(evento.target.value)} placeholder="Opcional" className="mb-6 rounded-2xl border-gray-200 bg-gray-50" />

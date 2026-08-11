@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -39,6 +34,58 @@ export type Database = {
   }
   public: {
     Tables: {
+      arqueos_sesion: {
+        Row: {
+          diferencia: number
+          id: string
+          medio_pago_id: string
+          monto_contado: number
+          monto_esperado: number
+          observaciones: string | null
+          sesion_id: string
+        }
+        Insert: {
+          diferencia: number
+          id?: string
+          medio_pago_id: string
+          monto_contado: number
+          monto_esperado: number
+          observaciones?: string | null
+          sesion_id: string
+        }
+        Update: {
+          diferencia?: number
+          id?: string
+          medio_pago_id?: string
+          monto_contado?: number
+          monto_esperado?: number
+          observaciones?: string | null
+          sesion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arqueos_sesion_medio_pago_id_fkey"
+            columns: ["medio_pago_id"]
+            isOneToOne: false
+            referencedRelation: "medios_pago"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arqueos_sesion_sesion_id_fkey"
+            columns: ["sesion_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_cajas"
+            referencedColumns: ["sesion_abierta_id"]
+          },
+          {
+            foreignKeyName: "arqueos_sesion_sesion_id_fkey"
+            columns: ["sesion_id"]
+            isOneToOne: false
+            referencedRelation: "sesiones_caja"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asignaciones: {
         Row: {
           created_at: string
@@ -145,6 +192,7 @@ export type Database = {
           id: string
           nombre: string
           ruc: string | null
+          slug: string
         }
         Insert: {
           activa?: boolean
@@ -153,6 +201,7 @@ export type Database = {
           id?: string
           nombre: string
           ruc?: string | null
+          slug?: string
         }
         Update: {
           activa?: boolean
@@ -161,6 +210,40 @@ export type Database = {
           id?: string
           nombre?: string
           ruc?: string | null
+          slug?: string
+        }
+        Relationships: []
+      }
+      medios_pago: {
+        Row: {
+          activo: boolean
+          color: string | null
+          created_at: string
+          descripcion: string | null
+          icono: string | null
+          id: string
+          nombre: string
+          tipo: Database["public"]["Enums"]["tipo_medio_pago"]
+        }
+        Insert: {
+          activo?: boolean
+          color?: string | null
+          created_at?: string
+          descripcion?: string | null
+          icono?: string | null
+          id?: string
+          nombre: string
+          tipo: Database["public"]["Enums"]["tipo_medio_pago"]
+        }
+        Update: {
+          activo?: boolean
+          color?: string | null
+          created_at?: string
+          descripcion?: string | null
+          icono?: string | null
+          id?: string
+          nombre?: string
+          tipo?: Database["public"]["Enums"]["tipo_medio_pago"]
         }
         Relationships: []
       }
@@ -175,8 +258,11 @@ export type Database = {
           descripcion: string | null
           fecha: string
           id: string
+          medio: Database["public"]["Enums"]["tipo_medio_pago"]
+          medio_pago_id: string | null
           monto: number
           motivo_anulacion: string | null
+          referencia: string | null
           sesion_id: string
           stand_id: string | null
           tipo: Database["public"]["Enums"]["tipo_movimiento"]
@@ -192,8 +278,11 @@ export type Database = {
           descripcion?: string | null
           fecha?: string
           id?: string
+          medio?: Database["public"]["Enums"]["tipo_medio_pago"]
+          medio_pago_id?: string | null
           monto: number
           motivo_anulacion?: string | null
+          referencia?: string | null
           sesion_id: string
           stand_id?: string | null
           tipo: Database["public"]["Enums"]["tipo_movimiento"]
@@ -209,8 +298,11 @@ export type Database = {
           descripcion?: string | null
           fecha?: string
           id?: string
+          medio?: Database["public"]["Enums"]["tipo_medio_pago"]
+          medio_pago_id?: string | null
           monto?: number
           motivo_anulacion?: string | null
+          referencia?: string | null
           sesion_id?: string
           stand_id?: string | null
           tipo?: Database["public"]["Enums"]["tipo_movimiento"]
@@ -250,6 +342,13 @@ export type Database = {
             columns: ["creado_por"]
             isOneToOne: false
             referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimientos_medio_pago_id_fkey"
+            columns: ["medio_pago_id"]
+            isOneToOne: false
+            referencedRelation: "medios_pago"
             referencedColumns: ["id"]
           },
           {
@@ -499,6 +598,36 @@ export type Database = {
       }
     }
     Views: {
+      esperados_por_medio: {
+        Row: {
+          medio_pago_id: string | null
+          monto_esperado: number | null
+          sesion_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimientos_medio_pago_id_fkey"
+            columns: ["medio_pago_id"]
+            isOneToOne: false
+            referencedRelation: "medios_pago"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimientos_sesion_id_fkey"
+            columns: ["sesion_id"]
+            isOneToOne: false
+            referencedRelation: "saldos_cajas"
+            referencedColumns: ["sesion_abierta_id"]
+          },
+          {
+            foreignKeyName: "movimientos_sesion_id_fkey"
+            columns: ["sesion_id"]
+            isOneToOne: false
+            referencedRelation: "sesiones_caja"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saldos_cajas: {
         Row: {
           abierta: boolean | null
@@ -526,6 +655,7 @@ export type Database = {
       abrir_caja: {
         Args: {
           p_caja_id: string
+          p_fecha?: string
           p_monto_apertura: number
           p_observaciones?: string
         }
@@ -566,6 +696,8 @@ export type Database = {
       }
       cerrar_caja: {
         Args: {
+          p_arqueos?: Json
+          p_fecha?: string
           p_monto_contado: number
           p_observaciones?: string
           p_sesion_id: string
@@ -606,6 +738,7 @@ export type Database = {
       }
       es_admin_general: { Args: never; Returns: boolean }
       esta_asignado: { Args: { p_empresa_id: string }; Returns: boolean }
+      generar_slug: { Args: { texto: string }; Returns: string }
       puede_acceder_caja: { Args: { p_caja_id: string }; Returns: boolean }
       puede_acceder_empresa: {
         Args: { p_empresa_id: string }
@@ -622,7 +755,10 @@ export type Database = {
           p_categoria_id: string
           p_comprobante_url?: string
           p_descripcion?: string
+          p_fecha?: string
+          p_medio_pago_id?: string
           p_monto: number
+          p_referencia?: string
           p_tipo: Database["public"]["Enums"]["tipo_movimiento"]
         }
         Returns: string
@@ -631,6 +767,7 @@ export type Database = {
     Enums: {
       rol_global: "admin_general" | "admin_organizacion"
       tipo_caja: "empresa"
+      tipo_medio_pago: "efectivo" | "tarjeta" | "transferencia"
       tipo_movimiento: "ingreso" | "egreso"
     }
     CompositeTypes: {
@@ -764,7 +901,9 @@ export const Constants = {
     Enums: {
       rol_global: ["admin_general", "admin_organizacion"],
       tipo_caja: ["empresa"],
+      tipo_medio_pago: ["efectivo", "tarjeta", "transferencia"],
       tipo_movimiento: ["ingreso", "egreso"],
     },
   },
 } as const
+

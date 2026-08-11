@@ -26,6 +26,15 @@ insert into public.categorias (nombre, tipo, descripcion) values
   ('Compra de Mercadería (prueba)',  'egreso',  'Categoría de prueba para desarrollo'),
   ('Pago de servicios (prueba)',     'egreso',  'Categoría de prueba para desarrollo');
 
+-- Medios de pago de PRUEBA (el catálogo real de producción empieza
+-- vacío y lo crea admin_general desde el panel). El efectivo no va
+-- acá: es implícito y no forma parte del catálogo.
+insert into public.medios_pago (nombre, tipo, descripcion) values
+  ('BCP',            'transferencia', 'Cuenta corriente BCP (prueba)'),
+  ('Interbank',      'transferencia', 'Cuenta corriente Interbank (prueba)'),
+  ('Yape/Plin',      'transferencia', 'Pagos por Yape/Plin (prueba)'),
+  ('Visa (Niubiz)',  'tarjeta',       'POS Niubiz (prueba)');
+
 -- Nota: los usuarios no se pueden sembrar aquí (viven en auth.users).
 -- En desarrollo se crean desde Supabase Studio local (Add user) y el
 -- trigger handle_new_user crea su perfil; josepu03@gmail.com nace admin.

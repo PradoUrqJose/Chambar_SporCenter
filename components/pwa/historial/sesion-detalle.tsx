@@ -4,6 +4,8 @@ import { ChevronLeftIcon } from "lucide-react";
 import { formatearFecha, formatearMontoPartes } from "@/lib/formato";
 import { oscurecerColor } from "@/lib/color";
 import { obtenerEstadoArqueo } from "@/lib/arqueo";
+import { obtenerIcono } from "@/lib/iconos";
+import { colorConAlpha } from "@/lib/color";
 import { LibroMayor } from "@/components/pwa/historial/libro-mayor";
 import { useNavegarConTransicion } from "@/components/pwa/view-transitions";
 import type { SesionDetalle } from "@/lib/consultas";
@@ -84,6 +86,41 @@ export function SesionDetalleAdminOrganizacion({ sesion }: Props) {
           </div>
         </div>
       </section>
+
+      {sesion.arqueosMedios.length > 0 && (
+        <section className="mb-6 px-6">
+          <h3 className="mb-3 text-sm font-medium text-gray-400">Arqueo por medio</h3>
+          <div className="flex flex-col gap-2">
+            {sesion.arqueosMedios.map((arqueo) => {
+              const Icono = obtenerIcono(arqueo.icono);
+              const colorMedio = arqueo.color ?? "#7c3aed";
+              const cuadradoMedio = Math.abs(arqueo.diferencia) < 0.005;
+              const esperado = formatearMontoPartes(arqueo.montoEsperado);
+              const contado = formatearMontoPartes(arqueo.montoContado);
+
+              return (
+                <div key={arqueo.medioPagoId} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: colorConAlpha(colorMedio, 0.12), color: colorMedio }}>
+                    <Icono className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-800">{arqueo.nombre}</p>
+                    <p className="text-xs text-gray-400">
+                      Esperado {esperado.entero}.{esperado.decimales} · Contado {contado.entero}.{contado.decimales}
+                    </p>
+                  </div>
+                  <span
+                    className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
+                    style={{ backgroundColor: cuadradoMedio ? "#e6f4ec" : arqueo.diferencia < 0 ? "#fde8e8" : "#fef3e2", color: cuadradoMedio ? "#1f7a4d" : arqueo.diferencia < 0 ? "#E7000B" : "#d97706" }}
+                  >
+                    {cuadradoMedio ? "Cuadrada" : arqueo.diferencia < 0 ? "Faltante" : "Sobrante"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <h3 className="mb-3 px-8 text-sm font-medium text-gray-400">Movimientos</h3>
 

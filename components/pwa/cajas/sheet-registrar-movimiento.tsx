@@ -8,15 +8,17 @@ import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { obtenerIcono } from "@/lib/iconos";
-import type { CategoriaOpcion } from "@/lib/consultas";
+import type { CategoriaOpcion, MedioPagoOpcion } from "@/lib/consultas";
 import type { PrefillMovimiento } from "@/components/pwa/cajas/sheet-detalle-movimiento";
 
 type Modo = "ingreso" | "egreso";
+type MedioPago = "efectivo" | "tarjeta" | "transferencia";
 
 type Props = {
   cajaId: string;
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
+  mediosPago: MedioPagoOpcion[];
   deshabilitado?: boolean;
   // Cuando otro componente (ej. "Anular y registrar de nuevo") necesita abrir
   // este sheet ya precargado, en vez de esperar a que el usuario toque
@@ -29,13 +31,22 @@ const TEMAS: Record<Modo, { label: string; accent: string; suave: string; gradie
   egreso: { label: "Gasto", accent: "#E7000B", suave: "#FEF2F2", gradiente: "linear-gradient(135deg, #E7000B, #7f1d1d)" },
 };
 
-export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categoriasEgreso, deshabilitado, prefill }: Props) {
+const MEDIOS: { valor: MedioPago; label: string }[] = [
+  { valor: "efectivo", label: "Efectivo" },
+  { valor: "tarjeta", label: "Tarjeta" },
+  { valor: "transferencia", label: "Transf." },
+];
+
+export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categoriasEgreso, mediosPago, deshabilitado, prefill }: Props) {
   const [abierto, setAbierto] = useState(false);
   const [modo, setModo] = useState<Modo>("egreso");
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
   const [monto, setMonto] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [comprobante, setComprobante] = useState<File | null>(null);
+  const [medio, setMedio] = useState<MedioPago>("efectivo");
+  const [medioPagoId, setMedioPagoId] = useState<string | null>(null);
+  const [referencia, setReferencia] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [prefillAnterior, setPrefillAnterior] = useState(prefill);
   const router = useRouter();
@@ -48,9 +59,14 @@ export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categorias
       setMonto(String(prefill.monto));
       setDescripcion(prefill.descripcion ?? "");
       setComprobante(null);
+      setMedio("efectivo");
+      setMedioPagoId(null);
+      setReferencia("");
       setAbierto(true);
     }
   }
+
+  const mediosPagoDelTipo = mediosPago.filter((m) => m.tipo === medio);
 
   const categoriasPorModo: Record<Modo, CategoriaOpcion[]> = { ingreso: categoriasIngreso, egreso: categoriasEgreso };
   const categorias = categoriasPorModo[modo];
@@ -66,11 +82,19 @@ export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categorias
     setMonto("");
     setDescripcion("");
     setComprobante(null);
+    setMedio("efectivo");
+    setMedioPagoId(null);
+    setReferencia("");
   }
 
   function cambiarModo(nuevoModo: Modo) {
     setModo(nuevoModo);
     setCategoriaId(categoriasPorModo[nuevoModo][0]?.id ?? null);
+  }
+
+  function cambiarMedio(nuevoMedio: MedioPago) {
+    setMedio(nuevoMedio);
+    setMedioPagoId(null);
   }
 
   function abrir(modoInicial: Modo) {
@@ -79,6 +103,9 @@ export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categorias
     setMonto("");
     setDescripcion("");
     setComprobante(null);
+    setMedio("efectivo");
+    setMedioPagoId(null);
+    setReferencia("");
     setAbierto(true);
   }
 
@@ -87,6 +114,11 @@ export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categorias
 
     if (!categoriaId || !montoNumero || montoNumero <= 0) {
       toast.error("Completa la categoría y un monto válido");
+      return;
+    }
+
+    if (medio !== "efectivo" && !medioPagoId) {
+      toast.error(`Elige ${medio === "tarjeta" ? "una tarjeta" : "un banco"}`);
       return;
     }
 
@@ -110,6 +142,8 @@ export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categorias
         p_categoria_id: categoriaId,
         p_descripcion: descripcion.trim() || undefined,
         p_comprobante_url: comprobanteUrl ?? undefined,
+        p_medio_pago_id: medio === "efectivo" ? undefined : (medioPagoId ?? undefined),
+        p_referencia: medio === "efectivo" ? undefined : referencia.trim() || undefined,
       });
 
       if (error) throw error;
@@ -236,6 +270,58 @@ export function SheetRegistrarMovimiento({ cajaId, categoriasIngreso, categorias
                 })}
               </SelectContent>
             </Select>
+
+            <label className="mb-2 block text-xs font-bold text-gray-500 uppercase">Medio de pago</label>
+            <div className="mb-4 flex rounded-2xl bg-gray-100 p-1">
+              {MEDIOS.map((opcion) => (
+                <button
+                  key={opcion.valor}
+                  type="button"
+                  onClick={() => cambiarMedio(opcion.valor)}
+                  className="flex-1 rounded-xl py-2.5 text-sm font-bold text-gray-400 transition-colors"
+                  style={medio === opcion.valor ? { backgroundColor: "#fff", color: tema.accent, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" } : undefined}
+                >
+                  {opcion.label}
+                </button>
+              ))}
+            </div>
+
+            {medio !== "efectivo" && (
+              <div className="mb-4 flex flex-col gap-3">
+                {mediosPagoDelTipo.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-xs text-gray-500">
+                    No hay {medio === "tarjeta" ? "tarjetas" : "bancos"} registrados. Pide al administrador general que los cree.
+                  </p>
+                ) : (
+                  <Select value={medioPagoId} onValueChange={setMedioPagoId}>
+                    <SelectTrigger className="w-full justify-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3" style={{ height: "auto" }}>
+                      <SelectValue placeholder={medio === "tarjeta" ? "Elige una tarjeta" : "Elige un banco"} className="flex-1 text-left font-semibold text-gray-800">
+                        {(valor: string | null) => mediosPagoDelTipo.find((m) => m.id === valor)?.nombre ?? (medio === "tarjeta" ? "Elige una tarjeta" : "Elige un banco")}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mediosPagoDelTipo.map((opcion) => {
+                        const Icono = obtenerIcono(opcion.icono);
+                        return (
+                          <SelectItem key={opcion.id} value={opcion.id} className="gap-3 border-t border-gray-100 px-4 py-3 first:border-t-0">
+                            <Icono className="h-5 w-5 shrink-0 text-gray-500" />
+                            <span className="flex-1 text-left">{opcion.nombre}</span>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                <input
+                  type="text"
+                  value={referencia}
+                  onChange={(evento) => setReferencia(evento.target.value)}
+                  placeholder="Nº de operación (opcional)"
+                  className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none"
+                />
+              </div>
+            )}
 
             <label className="mb-2 block text-xs font-bold text-gray-500 uppercase">Descripción</label>
             <input

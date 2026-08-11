@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { obtenerPerfilActual } from "@/lib/perfil";
-import { obtenerCajasEmpresas, obtenerEmpresaAsignada, obtenerSesionesCerradas } from "@/lib/consultas";
+import { obtenerCajasEmpresas, obtenerEmpresaAsignadaSlug, obtenerSesionesCerradas } from "@/lib/consultas";
 import { puedeOperarTodas } from "@/lib/roles";
 import { CajasAdminGeneral } from "@/components/web/cajas/cajas";
 import { PlaceholderPanel } from "@/components/web/placeholder-panel";
@@ -24,8 +24,8 @@ export default async function CajasPanelPage({ searchParams }: Props) {
   // admin_empresa (rol_global null) solo tiene una caja: sin lista, directo
   // al detalle de su empresa.
   if (perfil && perfil.rol_global === null) {
-    const empresaId = await obtenerEmpresaAsignada(perfil.id);
-    if (empresaId) redirect(`/panel/cajas/${empresaId}`);
+    const empresaSlug = await obtenerEmpresaAsignadaSlug(perfil.id);
+    if (empresaSlug) redirect(`/panel/cajas/${empresaSlug}`);
   }
 
   return <PlaceholderPanel titulo="Cajas" descripcion="Acá va el contenido de Cajas." />;

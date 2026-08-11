@@ -197,6 +197,7 @@ export async function obtenerSesionesSemana(cajaId: string): Promise<SesionDia[]
 
 export type CajaEmpresa = {
   empresaId: string;
+  empresaSlug: string;
   cajaId: string | null;
   nombre: string;
   color: string | null;
@@ -208,7 +209,7 @@ export async function obtenerCajasEmpresas(): Promise<CajaEmpresa[]> {
   const supabase = await createClient();
 
   const [{ data: empresas }, { data: saldos }] = await Promise.all([
-    supabase.from("empresas").select("id, nombre, color").eq("activa", true).order("nombre"),
+    supabase.from("empresas").select("id, nombre, color, slug").eq("activa", true).order("nombre"),
     supabase.from("saldos_cajas").select("caja_id, empresa_id, saldo, abierta").eq("tipo", "empresa"),
   ]);
 
@@ -218,6 +219,7 @@ export async function obtenerCajasEmpresas(): Promise<CajaEmpresa[]> {
     const saldo = saldoPorEmpresa.get(empresa.id);
     return {
       empresaId: empresa.id,
+      empresaSlug: empresa.slug,
       cajaId: saldo?.caja_id ?? null,
       nombre: empresa.nombre,
       color: empresa.color,
@@ -237,9 +239,32 @@ export async function obtenerEmpresaAsignada(usuarioId: string): Promise<string 
   return data?.empresa_id ?? null;
 }
 
+// Igual que obtenerEmpresaAsignada, pero trae el slug en vez del id —lo
+// único que necesitan los links (sidebar, redirect de /panel/cajas) para
+// armar /panel/cajas/{slug} sin exponer el UUID en la URL.
+export async function obtenerEmpresaAsignadaSlug(usuarioId: string): Promise<string | null> {
+  const supabase = await createClient();
+
+  const { data } = await supabase.from("asignaciones").select("empresas(slug)").eq("usuario_id", usuarioId).maybeSingle();
+
+  return data?.empresas?.slug ?? null;
+}
+
+// El slug solo se usa para resolver la URL de /panel/cajas/{slug} al id
+// real apenas se entra a la página; el resto de la app (obtenerCajaEmpresa
+// y todo lo que cuelga de ella) sigue funcionando con el UUID de siempre.
+export async function obtenerEmpresaIdPorSlug(empresaSlug: string): Promise<string | null> {
+  const supabase = await createClient();
+
+  const { data } = await supabase.from("empresas").select("id").eq("slug", empresaSlug).single();
+
+  return data?.id ?? null;
+}
+
 export type CajaEmpresaDetalle = {
   cajaId: string;
   empresaId: string;
+  empresaSlug: string;
   nombre: string;
   color: string | null;
   saldo: number;
@@ -251,7 +276,7 @@ export async function obtenerCajaEmpresa(empresaId: string): Promise<CajaEmpresa
   const supabase = await createClient();
 
   const [{ data: empresa }, { data: saldo }] = await Promise.all([
-    supabase.from("empresas").select("id, nombre, color").eq("id", empresaId).single(),
+    supabase.from("empresas").select("id, nombre, color, slug").eq("id", empresaId).single(),
     supabase.from("saldos_cajas").select("caja_id, saldo, abierta, sesion_abierta_id").eq("empresa_id", empresaId).eq("tipo", "empresa").single(),
   ]);
 
@@ -262,6 +287,7 @@ export async function obtenerCajaEmpresa(empresaId: string): Promise<CajaEmpresa
   return {
     cajaId: saldo.caja_id,
     empresaId: empresa.id,
+    empresaSlug: empresa.slug,
     nombre: empresa.nombre,
     color: empresa.color,
     saldo: Number(saldo.saldo),
@@ -282,6 +308,10 @@ export type MovimientoReciente = {
   categoriaIcono: string | null;
   categoriaColor: string | null;
   transferenciaId: string | null;
+  medio: "efectivo" | "tarjeta" | "transferencia";
+  medioPagoNombre: string | null;
+  medioPagoColor: string | null;
+  referencia: string | null;
 };
 
 // Misma ventana de 6 días que obtenerFlujoSemanal, para que el detalle de
@@ -296,7 +326,9 @@ export async function obtenerMovimientosSemana(cajaId: string): Promise<Movimien
 
   const { data } = await supabase
     .from("movimientos")
-    .select("id, tipo, monto, descripcion, comprobante_url, fecha, categoria_id, transferencia_id, categorias(nombre, icono, color)")
+    .select(
+      "id, tipo, monto, descripcion, comprobante_url, fecha, categoria_id, transferencia_id, medio, referencia, categorias(nombre, icono, color), medios_pago(nombre, color)",
+    )
     .eq("caja_id", cajaId)
     .is("anulado_at", null)
     .gte("fecha", inicio)
@@ -315,6 +347,10 @@ export async function obtenerMovimientosSemana(cajaId: string): Promise<Movimien
     transferenciaId: movimiento.transferencia_id,
     categoriaIcono: movimiento.categorias?.icono ?? null,
     categoriaColor: movimiento.categorias?.color ?? null,
+    medio: movimiento.medio,
+    medioPagoNombre: movimiento.medios_pago?.nombre ?? null,
+    medioPagoColor: movimiento.medios_pago?.color ?? null,
+    referencia: movimiento.referencia,
   }));
 }
 
@@ -462,6 +498,9 @@ export type SesionHistorial = {
   montoContado: number;
   montoEsperado: number;
   diferencia: number;
+  // Tarjeta/transferencia descuadrada, aparte del efectivo (diferencia
+  // arriba): si viene en true, la sesión no cuadra aunque diferencia sea 0.
+  hayDescuadreMedios: boolean;
   abiertaPor: string | null;
   cerradaPor: string | null;
 };
@@ -485,11 +524,20 @@ export async function obtenerSesionesCerradas(cajaId?: string, rango?: RangoFech
 
   const { data } = await consulta;
 
+  const sesionIds = (data ?? []).map((sesion) => sesion.id);
+  const { data: arqueosMedios } =
+    sesionIds.length > 0 ? await supabase.from("arqueos_sesion").select("sesion_id, diferencia").in("sesion_id", sesionIds) : { data: [] };
+
+  const sesionesConDescuadreMedios = new Set(
+    (arqueosMedios ?? []).filter((arqueo) => Math.abs(Number(arqueo.diferencia)) >= 0.005).map((arqueo) => arqueo.sesion_id),
+  );
+
   return (data ?? []).map((sesion) => ({
     id: sesion.id,
     cajaId: sesion.caja_id,
     cajaNombre: sesion.cajas?.nombre ?? "Caja",
     cajaColor: sesion.cajas?.empresas?.color ?? null,
+    hayDescuadreMedios: sesionesConDescuadreMedios.has(sesion.id),
     aperturaAt: sesion.apertura_at,
     cierreAt: sesion.cierre_at!,
     montoApertura: Number(sesion.monto_apertura),
@@ -511,7 +559,7 @@ export type ResumenHistorial = {
 export async function obtenerResumenHistorial(cajaId?: string, rango?: RangoFechas): Promise<ResumenHistorial> {
   const supabase = await createClient();
 
-  let consultaSesiones = supabase.from("sesiones_caja").select("diferencia").not("cierre_at", "is", null);
+  let consultaSesiones = supabase.from("sesiones_caja").select("id, diferencia").not("cierre_at", "is", null);
   let consultaAnulados = supabase.from("movimientos").select("id", { count: "exact", head: true }).not("anulado_at", "is", null);
 
   if (cajaId) {
@@ -529,13 +577,30 @@ export async function obtenerResumenHistorial(cajaId?: string, rango?: RangoFech
 
   const [{ data: sesiones }, { count: movimientosAnulados }] = await Promise.all([consultaSesiones, consultaAnulados]);
 
-  const diferencias = (sesiones ?? []).map((sesion) => Number(sesion.diferencia));
+  const sesionIds = (sesiones ?? []).map((sesion) => sesion.id);
+
+  // El arqueo de una sesión no es solo su efectivo: si algún medio (tarjeta/
+  // transferencia) quedó descuadrado, la sesión cuenta como descuadrada y su
+  // diferencia suma a la diferencia neta igual que la del efectivo.
+  const { data: arqueosMedios } =
+    sesionIds.length > 0 ? await supabase.from("arqueos_sesion").select("sesion_id, diferencia").in("sesion_id", sesionIds) : { data: [] };
+
+  const diferenciaMedioPorSesion = new Map<string, number>();
+  for (const arqueo of arqueosMedios ?? []) {
+    diferenciaMedioPorSesion.set(arqueo.sesion_id, (diferenciaMedioPorSesion.get(arqueo.sesion_id) ?? 0) + Number(arqueo.diferencia));
+  }
+
+  const diferencias = (sesiones ?? []).map((sesion) => {
+    const diferenciaEfectivo = Number(sesion.diferencia);
+    const diferenciaMedios = diferenciaMedioPorSesion.get(sesion.id) ?? 0;
+    return { efectivo: diferenciaEfectivo, medios: diferenciaMedios, total: diferenciaEfectivo + diferenciaMedios };
+  });
 
   return {
     sesionesCerradas: diferencias.length,
-    sesionesDescuadradas: diferencias.filter((diferencia) => Math.abs(diferencia) >= 0.005).length,
+    sesionesDescuadradas: diferencias.filter((d) => Math.abs(d.efectivo) >= 0.005 || Math.abs(d.medios) >= 0.005).length,
     movimientosAnulados: movimientosAnulados ?? 0,
-    diferenciaNeta: diferencias.reduce((total, diferencia) => total + diferencia, 0),
+    diferenciaNeta: diferencias.reduce((total, d) => total + d.total, 0),
   };
 }
 
@@ -555,6 +620,20 @@ export type MovimientoLibroMayor = {
   transferenciaId: string | null;
   creadoPor: string | null;
   standNombre: string | null;
+  medio: "efectivo" | "tarjeta" | "transferencia";
+  medioPagoNombre: string | null;
+  medioPagoColor: string | null;
+  referencia: string | null;
+};
+
+export type ArqueoMedioSesion = {
+  medioPagoId: string;
+  nombre: string;
+  icono: string | null;
+  color: string | null;
+  montoEsperado: number;
+  montoContado: number;
+  diferencia: number;
 };
 
 export type SesionDetalle = {
@@ -573,12 +652,15 @@ export type SesionDetalle = {
   abiertaPor: string | null;
   cerradaPor: string | null;
   movimientos: MovimientoLibroMayor[];
+  // Arqueo de tarjeta/transferencia (vacío si la sesión sigue abierta, o
+  // si no tuvo movimientos en otros medios).
+  arqueosMedios: ArqueoMedioSesion[];
 };
 
 export async function obtenerSesionDetalle(sesionId: string): Promise<SesionDetalle | null> {
   const supabase = await createClient();
 
-  const [{ data: sesion }, { data: movimientos }] = await Promise.all([
+  const [{ data: sesion }, { data: movimientos }, { data: arqueosMedios }] = await Promise.all([
     supabase
       .from("sesiones_caja")
       .select(
@@ -589,10 +671,11 @@ export async function obtenerSesionDetalle(sesionId: string): Promise<SesionDeta
     supabase
       .from("movimientos")
       .select(
-        "id, tipo, monto, fecha, descripcion, comprobante_url, anulado_at, motivo_anulacion, transferencia_id, categorias(nombre, icono, color), anulado_por:perfiles!anulado_por(nombre), creado_por:perfiles!creado_por(nombre), stands(nombre)",
+        "id, tipo, monto, fecha, descripcion, comprobante_url, anulado_at, motivo_anulacion, transferencia_id, medio, referencia, categorias(nombre, icono, color), medios_pago(nombre, color), anulado_por:perfiles!anulado_por(nombre), creado_por:perfiles!creado_por(nombre), stands(nombre)",
       )
       .eq("sesion_id", sesionId)
       .order("fecha", { ascending: true }),
+    supabase.from("arqueos_sesion").select("medio_pago_id, monto_esperado, monto_contado, diferencia, medios_pago(nombre, icono, color)").eq("sesion_id", sesionId),
   ]);
 
   if (!sesion) return null;
@@ -628,8 +711,71 @@ export async function obtenerSesionDetalle(sesionId: string): Promise<SesionDeta
       transferenciaId: movimiento.transferencia_id,
       creadoPor: movimiento.creado_por?.nombre ?? null,
       standNombre: movimiento.stands?.nombre ?? null,
+      medio: movimiento.medio,
+      medioPagoNombre: movimiento.medios_pago?.nombre ?? null,
+      medioPagoColor: movimiento.medios_pago?.color ?? null,
+      referencia: movimiento.referencia,
     })),
+    arqueosMedios: (arqueosMedios ?? [])
+      .filter((arqueo) => arqueo.medios_pago !== null)
+      .map((arqueo) => ({
+        medioPagoId: arqueo.medio_pago_id,
+        nombre: arqueo.medios_pago!.nombre,
+        icono: arqueo.medios_pago!.icono,
+        color: arqueo.medios_pago!.color,
+        montoEsperado: Number(arqueo.monto_esperado),
+        montoContado: Number(arqueo.monto_contado),
+        diferencia: Number(arqueo.diferencia),
+      })),
   };
+}
+
+export type EsperadoMedioSesion = {
+  medioPagoId: string;
+  nombre: string;
+  tipo: "tarjeta" | "transferencia";
+  icono: string | null;
+  color: string | null;
+  esperado: number;
+};
+
+// Para prellenar el cierre multi-medio: cuánto se espera en cada tarjeta/
+// banco con movimientos no anulados en la sesión (vista esperados_por_medio,
+// que ya excluye efectivo). Dos consultas + merge en JS en vez de un embed
+// PostgREST, porque esa vista agrega (group by) y PostgREST no detecta la
+// relación FK a través de una agregación.
+export async function obtenerEsperadosPorMedioSesion(sesionId: string): Promise<EsperadoMedioSesion[]> {
+  const supabase = await createClient();
+
+  const { data: esperados } = await supabase.from("esperados_por_medio").select("medio_pago_id, monto_esperado").eq("sesion_id", sesionId);
+
+  const filas = (esperados ?? []).filter((fila): fila is { medio_pago_id: string; monto_esperado: number } => fila.medio_pago_id !== null);
+  if (filas.length === 0) return [];
+
+  const { data: medios } = await supabase
+    .from("medios_pago")
+    .select("id, nombre, tipo, icono, color")
+    .in(
+      "id",
+      filas.map((fila) => fila.medio_pago_id),
+    );
+
+  const mediosPorId = new Map((medios ?? []).map((medio) => [medio.id, medio]));
+
+  return filas
+    .map((fila): EsperadoMedioSesion | null => {
+      const medio = mediosPorId.get(fila.medio_pago_id);
+      if (!medio) return null;
+      return {
+        medioPagoId: fila.medio_pago_id,
+        nombre: medio.nombre,
+        tipo: medio.tipo as "tarjeta" | "transferencia",
+        icono: medio.icono,
+        color: medio.color,
+        esperado: Number(fila.monto_esperado),
+      };
+    })
+    .filter((fila): fila is EsperadoMedioSesion => fila !== null);
 }
 
 export type EmpresaOpcion = { id: string; nombre: string; color: string | null };
@@ -899,6 +1045,53 @@ export async function obtenerCategoriasAdmin(): Promise<CategoriaAdmin[]> {
   return data ?? [];
 }
 
+export type MedioPagoAdmin = {
+  id: string;
+  nombre: string;
+  tipo: "tarjeta" | "transferencia";
+  descripcion: string | null;
+  icono: string | null;
+  color: string | null;
+  activo: boolean;
+};
+
+// Igual patrón que obtenerCategoriasAdmin: vista administrativa sin caché,
+// incluye inactivos (los gestiona solo admin_general, ver lib/acciones/medios-pago.ts).
+export async function obtenerMediosPagoAdmin(): Promise<MedioPagoAdmin[]> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("medios_pago")
+    .select("id, nombre, tipo, descripcion, icono, color, activo")
+    .order("nombre");
+
+  // El constraint medio_no_efectivo garantiza que tipo nunca es 'efectivo'
+  // en esta tabla; el enum de columna sí lo admite (lo comparte con
+  // movimientos.medio), de ahí el cast.
+  return (data ?? []).map((fila) => ({ ...fila, tipo: fila.tipo as "tarjeta" | "transferencia" }));
+}
+
+export type MedioPagoOpcion = { id: string; nombre: string; tipo: "tarjeta" | "transferencia"; icono: string | null; color: string | null };
+
+// Catálogo casi estático (lo edita admin_general, cambia poco): mismo
+// patrón cacheado que obtenerCategoriasPorTipo, con invalidación por tag
+// cuando se crea/edita/desactiva un medio de pago.
+export const obtenerMediosPagoActivos = unstable_cache(
+  async (): Promise<MedioPagoOpcion[]> => {
+    const supabase = createServiceClient();
+
+    const { data } = await supabase
+      .from("medios_pago")
+      .select("id, nombre, tipo, icono, color")
+      .eq("activo", true)
+      .order("nombre");
+
+    return (data ?? []).map((fila) => ({ ...fila, tipo: fila.tipo as "tarjeta" | "transferencia" }));
+  },
+  ["medios-pago-activos"],
+  { revalidate: 300, tags: ["medios-pago"] },
+);
+
 export type MovimientoReporte = {
   id: string;
   tipo: "ingreso" | "egreso";
@@ -911,6 +1104,9 @@ export type MovimientoReporte = {
   categoriaNombre: string | null;
   categoriaIcono: string | null;
   categoriaColor: string | null;
+  medio: "efectivo" | "tarjeta" | "transferencia";
+  medioPagoNombre: string | null;
+  referencia: string | null;
 };
 
 // Consolidado de la organización: solo movimientos de cajas de empresa (no
@@ -921,7 +1117,7 @@ export async function obtenerMovimientosReporte(rango: RangoFechas, empresaId?: 
   let consulta = supabase
     .from("movimientos")
     .select(
-      "id, tipo, monto, fecha, categoria_id, categorias(nombre, icono, color), cajas!inner(empresa_id, tipo, empresas(nombre, color))",
+      "id, tipo, monto, fecha, categoria_id, medio, referencia, categorias(nombre, icono, color), medios_pago(nombre), cajas!inner(empresa_id, tipo, empresas(nombre, color))",
     )
     .eq("cajas.tipo", "empresa")
     .not("categoria_id", "is", null)
@@ -946,5 +1142,8 @@ export async function obtenerMovimientosReporte(rango: RangoFechas, empresaId?: 
     categoriaNombre: movimiento.categorias?.nombre ?? null,
     categoriaIcono: movimiento.categorias?.icono ?? null,
     categoriaColor: movimiento.categorias?.color ?? null,
+    medio: movimiento.medio,
+    medioPagoNombre: movimiento.medios_pago?.nombre ?? null,
+    referencia: movimiento.referencia,
   }));
 }

@@ -7,7 +7,7 @@ import { AccionesCaja } from "@/components/web/cajas/acciones-caja";
 import { CardMovimientosSesion } from "@/components/web/cajas/movimientos-caja";
 import { CardMovimientosSemana } from "@/components/web/cajas/tabla-movimientos-semana";
 import { SelectorVistaCaja } from "@/components/web/cajas/selector-vista-caja";
-import type { CajaEmpresaDetalle, CategoriaOpcion, FlujoDia, MovimientoReciente, SesionDetalle, SesionDia, StandOpcion } from "@/lib/consultas";
+import type { CajaEmpresaDetalle, CategoriaOpcion, EsperadoMedioSesion, FlujoDia, MedioPagoOpcion, MovimientoReciente, SesionDetalle, SesionDia, StandOpcion } from "@/lib/consultas";
 
 type Props = {
   caja: CajaEmpresaDetalle;
@@ -22,6 +22,10 @@ type Props = {
   urlsComprobantes: Map<string, string>;
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
+  mediosPago: MedioPagoOpcion[];
+  // Esperado por medio (tarjeta/transferencia) de la sesión abierta, para
+  // prellenar el cierre multi-medio. Vacío si la caja está cerrada.
+  esperadosPorMedio: EsperadoMedioSesion[];
   stands: StandOpcion[];
   // admin_empresa solo tiene esta única caja: no hay lista a la que volver.
   mostrarVolver?: boolean;
@@ -46,6 +50,8 @@ export function CajaDetalle({
   urlsComprobantes,
   categoriasIngreso,
   categoriasEgreso,
+  mediosPago,
+  esperadosPorMedio,
   stands,
   mostrarVolver = true,
   esAdmin = false,
@@ -64,6 +70,8 @@ export function CajaDetalle({
               urlsComprobantes={urlsComprobantes}
               categoriasIngreso={categoriasIngreso}
               categoriasEgreso={categoriasEgreso}
+              mediosPago={mediosPago}
+              esperadosPorMedio={esperadosPorMedio}
               stands={stands}
               esAdmin={esAdmin}
             />
@@ -78,6 +86,8 @@ export function CajaDetalle({
             urlsComprobantes={urlsComprobantes}
             categoriasIngreso={categoriasIngreso}
             categoriasEgreso={categoriasEgreso}
+            mediosPago={mediosPago}
+            esperadosPorMedio={esperadosPorMedio}
             esAdmin={esAdmin}
           />
         }
@@ -93,6 +103,8 @@ function VistaSesionActual({
   urlsComprobantes,
   categoriasIngreso,
   categoriasEgreso,
+  mediosPago,
+  esperadosPorMedio,
   stands,
   esAdmin,
 }: {
@@ -102,6 +114,8 @@ function VistaSesionActual({
   urlsComprobantes: Map<string, string>;
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
+  mediosPago: MedioPagoOpcion[];
+  esperadosPorMedio: EsperadoMedioSesion[];
   stands: StandOpcion[];
   esAdmin: boolean;
 }) {
@@ -252,6 +266,8 @@ function VistaSesionActual({
             montoReferencia={caja.saldo}
             categoriasIngreso={categoriasIngreso}
             categoriasEgreso={categoriasEgreso}
+            mediosPago={mediosPago}
+            esperadosPorMedio={esperadosPorMedio}
             stands={stands}
             esAdmin={esAdmin}
           />
@@ -273,6 +289,8 @@ function VistaSemana({
   urlsComprobantes,
   categoriasIngreso,
   categoriasEgreso,
+  mediosPago,
+  esperadosPorMedio,
   esAdmin,
 }: {
   caja: CajaEmpresaDetalle;
@@ -282,6 +300,8 @@ function VistaSemana({
   urlsComprobantes: Map<string, string>;
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
+  mediosPago: MedioPagoOpcion[];
+  esperadosPorMedio: EsperadoMedioSesion[];
   esAdmin: boolean;
 }) {
   const color = caja.color ?? COLOR_POR_DEFECTO;
@@ -350,6 +370,8 @@ function VistaSemana({
             montoReferencia={caja.saldo}
             categoriasIngreso={categoriasIngreso}
             categoriasEgreso={categoriasEgreso}
+            mediosPago={mediosPago}
+            esperadosPorMedio={esperadosPorMedio}
             esAdmin={esAdmin}
           />
         </div>

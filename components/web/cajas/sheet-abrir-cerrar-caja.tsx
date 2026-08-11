@@ -8,12 +8,17 @@ import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { ahoraLimaDatetimeLocal, datetimeLocalAIsoLima, formatearMontoPartes } from "@/lib/formato";
+import { obtenerIcono } from "@/lib/iconos";
+import type { EsperadoMedioSesion } from "@/lib/consultas";
 
 type Props = {
   cajaId: string;
   sesionAbiertaId: string | null;
   abierta: boolean;
   montoReferencia: number;
+  // Tarjeta/transferencia con movimientos no anulados en la sesión abierta:
+  // cada una se cuadra por separado, aparte del efectivo.
+  esperadosPorMedio: EsperadoMedioSesion[];
   abierto: boolean;
   onOpenChange: (abierto: boolean) => void;
   // Solo admin_general/admin_organizacion pueden elegir una fecha pasada
@@ -44,12 +49,13 @@ function etiquetaDenominacion(valor: number) {
   return `S/ ${valor % 1 === 0 ? valor : valor.toFixed(2)}`;
 }
 
-export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia, abierto, onOpenChange, esAdmin = false }: Props) {
+export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia, esperadosPorMedio, abierto, onOpenChange, esAdmin = false }: Props) {
   const [montoApertura, setMontoApertura] = useState("");
   const [modoConteo, setModoConteo] = useState<ModoConteo>("denominacion");
   const [filasActivas, setFilasActivas] = useState<number[]>([]);
   const [cantidades, setCantidades] = useState<Record<number, number>>({});
   const [montoDirecto, setMontoDirecto] = useState("");
+  const [contadosMedios, setContadosMedios] = useState<Record<string, string>>({});
   const [observaciones, setObservaciones] = useState("");
   const [fecha, setFecha] = useState(ahoraLimaDatetimeLocal());
   const [confirmando, setConfirmando] = useState(false);
@@ -65,6 +71,9 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
       setFilasActivas([]);
       setCantidades({});
       setMontoDirecto("");
+      // Prellenado con el esperado: lo normal es que cuadre; el operador
+      // solo corrige lo que de verdad no coincide con el voucher/extracto.
+      setContadosMedios(Object.fromEntries(esperadosPorMedio.map((m) => [m.medioPagoId, m.esperado.toFixed(2)])));
       setObservaciones("");
       setFecha(ahoraLimaDatetimeLocal());
       setConfirmando(false);
@@ -79,6 +88,18 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
   const diferencia = montoContado - montoReferencia;
   const cuadrada = Math.abs(diferencia) < 0.005;
   const disponibles = DENOMINACIONES.filter((d) => !filasActivas.includes(d.valor));
+
+  const diferenciasMedios = esperadosPorMedio.map((medio) => {
+    const contado = Number(contadosMedios[medio.medioPagoId]) || 0;
+    return { ...medio, contado, diferencia: contado - medio.esperado };
+  });
+  const hayDescuadreMedios = diferenciasMedios.some((m) => Math.abs(m.diferencia) >= 0.005);
+  const todoCuadrado = cuadrada && !hayDescuadreMedios;
+
+  function cambiarContadoMedio(medioPagoId: string, texto: string) {
+    setContadosMedios((actual) => ({ ...actual, [medioPagoId]: texto.replace(/[^0-9.]/g, "") }));
+    setConfirmando(false);
+  }
 
   function agregarDenominacion(valor: number) {
     setFilasActivas((actual) => [...actual, valor]);
@@ -136,7 +157,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
   async function confirmarCerrarCaja() {
     if (!sesionAbiertaId) return;
 
-    if (!cuadrada && !confirmando) {
+    if (!todoCuadrado && !confirmando) {
       setConfirmando(true);
       return;
     }
@@ -150,6 +171,7 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
         p_monto_contado: montoContado,
         p_observaciones: observaciones.trim() || undefined,
         p_fecha: esAdmin ? datetimeLocalAIsoLima(fecha) : undefined,
+        p_arqueos: diferenciasMedios.map((m) => ({ medio_pago_id: m.medioPagoId, monto_contado: m.contado })),
       });
 
       if (error) throw error;
@@ -297,6 +319,53 @@ export function SheetAbrirCerrarCaja({ cajaId, sesionAbiertaId, abierta, montoRe
                   )}
                 </div>
               </div>
+
+              {esperadosPorMedio.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-bold text-muted-foreground uppercase">Otros medios</p>
+                  <div className="flex flex-col gap-2">
+                    {diferenciasMedios.map((medio) => {
+                      const Icono = obtenerIcono(medio.icono);
+                      const color = medio.color ?? "#7c3aed";
+                      const cuadradoMedio = Math.abs(medio.diferencia) < 0.005;
+                      const partesEsperado = formatearMontoPartes(medio.esperado);
+
+                      return (
+                        <div key={medio.medioPagoId} className="flex items-center gap-2.5 rounded-xl border border-border bg-muted px-3 py-2.5">
+                          <span
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                            style={{ backgroundColor: `${color}1a`, color }}
+                          >
+                            <Icono className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold">{medio.nombre}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Esperado S/ {partesEsperado.entero}.{partesEsperado.decimales}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <span className="text-xs font-bold text-muted-foreground/60">S/</span>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={contadosMedios[medio.medioPagoId] ?? ""}
+                              onChange={(evento) => cambiarContadoMedio(medio.medioPagoId, evento.target.value)}
+                              className="w-20 rounded-lg border border-border bg-card px-2 py-1.5 text-right text-sm font-bold focus:border-ring focus:outline-none"
+                            />
+                          </div>
+                          <span
+                            className="shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase"
+                            style={{ backgroundColor: cuadradoMedio ? "#e6f4ec" : medio.diferencia < 0 ? "#fde8e8" : "#fef3e2", color: cuadradoMedio ? "#1f7a4d" : medio.diferencia < 0 ? "#E7000B" : "#d97706" }}
+                          >
+                            {cuadradoMedio ? "OK" : medio.diferencia < 0 ? "Falta" : "Sobra"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {esAdmin && (
                 <div>

@@ -1,6 +1,14 @@
 import { notFound } from "next/navigation";
 import { obtenerPerfilActual } from "@/lib/perfil";
-import { obtenerCajaEmpresa, obtenerCategoriasPorTipo, obtenerFlujoSemanal, obtenerMovimientosSemana, obtenerSesionesSemana } from "@/lib/consultas";
+import {
+  obtenerCajaEmpresa,
+  obtenerCategoriasPorTipo,
+  obtenerEsperadosPorMedioSesion,
+  obtenerFlujoSemanal,
+  obtenerMediosPagoActivos,
+  obtenerMovimientosSemana,
+  obtenerSesionesSemana,
+} from "@/lib/consultas";
 import { CajaDetalle } from "@/components/pwa/cajas/caja-detalle";
 
 type Props = {
@@ -15,12 +23,14 @@ export default async function CajaEmpresaPage({ params }: Props) {
     const caja = await obtenerCajaEmpresa(id);
     if (!caja) notFound();
 
-    const [flujoSemanal, movimientos, sesionesSemana, categoriasIngreso, categoriasEgreso] = await Promise.all([
+    const [flujoSemanal, movimientos, sesionesSemana, categoriasIngreso, categoriasEgreso, mediosPago, esperadosPorMedio] = await Promise.all([
       obtenerFlujoSemanal(caja.cajaId),
       obtenerMovimientosSemana(caja.cajaId),
       obtenerSesionesSemana(caja.cajaId),
       obtenerCategoriasPorTipo("ingreso"),
       obtenerCategoriasPorTipo("egreso"),
+      obtenerMediosPagoActivos(),
+      caja.sesionAbiertaId ? obtenerEsperadosPorMedioSesion(caja.sesionAbiertaId) : Promise.resolve([]),
     ]);
 
     return (
@@ -31,6 +41,8 @@ export default async function CajaEmpresaPage({ params }: Props) {
         sesionesSemana={sesionesSemana}
         categoriasIngreso={categoriasIngreso}
         categoriasEgreso={categoriasEgreso}
+        mediosPago={mediosPago}
+        esperadosPorMedio={esperadosPorMedio}
       />
     );
   }

@@ -6,7 +6,7 @@ import { colorConAlpha } from "@/lib/color";
 import { SheetRegistrarMovimiento } from "@/components/web/cajas/sheet-registrar-movimiento";
 import { SheetAbrirCerrarCaja } from "@/components/web/cajas/sheet-abrir-cerrar-caja";
 import { SheetFondoFijoStand } from "@/components/web/cajas/sheet-fondo-fijo-stand";
-import type { CategoriaOpcion, StandOpcion } from "@/lib/consultas";
+import type { CategoriaOpcion, EsperadoMedioSesion, MedioPagoOpcion, StandOpcion } from "@/lib/consultas";
 
 type Props = {
   cajaId: string;
@@ -15,6 +15,8 @@ type Props = {
   montoReferencia: number;
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
+  mediosPago: MedioPagoOpcion[];
+  esperadosPorMedio: EsperadoMedioSesion[];
   // Solo se usan en la variante "tarjetas": si la empresa tiene stands
   // activos, se agregan los botones de entregar/recibir fondo fijo.
   stands?: StandOpcion[];
@@ -34,7 +36,19 @@ const SLATE = "#40566e";
 const ENTREGA = "#7c3aed";
 const RECEPCION = "#0891b2";
 
-export function AccionesCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia, categoriasIngreso, categoriasEgreso, stands = [], variante = "compacta", esAdmin = false }: Props) {
+export function AccionesCaja({
+  cajaId,
+  sesionAbiertaId,
+  abierta,
+  montoReferencia,
+  categoriasIngreso,
+  categoriasEgreso,
+  mediosPago,
+  esperadosPorMedio,
+  stands = [],
+  variante = "compacta",
+  esAdmin = false,
+}: Props) {
   const [dialogoMovimiento, setDialogoMovimiento] = useState<"ingreso" | "egreso" | null>(null);
   const [dialogoStand, setDialogoStand] = useState<"entregar" | "recibir" | null>(null);
   const [dialogoCaja, setDialogoCaja] = useState(false);
@@ -101,6 +115,7 @@ export function AccionesCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia
         modoInicial={dialogoMovimiento ?? "ingreso"}
         categoriasIngreso={categoriasIngreso}
         categoriasEgreso={categoriasEgreso}
+        mediosPago={mediosPago}
         onOpenChange={(abierto) => setDialogoMovimiento(abierto ? (dialogoMovimiento ?? "ingreso") : null)}
         esAdmin={esAdmin}
       />
@@ -110,6 +125,7 @@ export function AccionesCaja({ cajaId, sesionAbiertaId, abierta, montoReferencia
         sesionAbiertaId={sesionAbiertaId}
         abierta={abierta}
         montoReferencia={montoReferencia}
+        esperadosPorMedio={esperadosPorMedio}
         abierto={dialogoCaja}
         onOpenChange={setDialogoCaja}
         esAdmin={esAdmin}

@@ -114,13 +114,31 @@ function agruparPorPeriodo(movimientos: MovimientoReporte[], desde: string, hast
   return Array.from(mapa.values()).sort((a, b) => a.orden - b.orden);
 }
 
+const ETIQUETA_MEDIO: Record<MovimientoReporte["medio"], string> = { efectivo: "Efectivo", tarjeta: "Tarjeta", transferencia: "Transferencia" };
+
+function agruparPorMedio(movimientos: MovimientoReporte[]): { medio: string; nombre: string; total: number }[] {
+  const mapa = new Map<string, { medio: string; nombre: string; total: number }>();
+
+  for (const movimiento of movimientos) {
+    const clave = movimiento.medio === "efectivo" ? "efectivo" : `${movimiento.medio}:${movimiento.medioPagoNombre ?? "—"}`;
+    const nombre = movimiento.medio === "efectivo" ? "Efectivo" : (movimiento.medioPagoNombre ?? ETIQUETA_MEDIO[movimiento.medio]);
+    const actual = mapa.get(clave) ?? { medio: movimiento.medio, nombre, total: 0 };
+    actual.total += movimiento.monto;
+    mapa.set(clave, actual);
+  }
+
+  return Array.from(mapa.values()).sort((a, b) => b.total - a.total);
+}
+
 function exportarCSV(movimientos: MovimientoReporte[], desde: string, hasta: string) {
-  const encabezado = ["Fecha", "Empresa", "Tipo", "Categoría", "Monto"];
+  const encabezado = ["Fecha", "Empresa", "Tipo", "Categoría", "Medio", "Referencia", "Monto"];
   const filas = movimientos.map((movimiento) => [
     fechaLimaISO(movimiento.fecha),
     movimiento.empresaNombre,
     movimiento.tipo === "ingreso" ? "Ingreso" : "Egreso",
     movimiento.categoriaNombre ?? "Sin categoría",
+    movimiento.medio === "efectivo" ? "Efectivo" : (movimiento.medioPagoNombre ?? ETIQUETA_MEDIO[movimiento.medio]),
+    movimiento.referencia ?? "",
     movimiento.monto.toFixed(2),
   ]);
 
@@ -161,6 +179,9 @@ export function ReportesAdminGeneral({ empresas, movimientos, empresaId, desde, 
 
   const buckets = useMemo(() => agruparPorPeriodo(movimientos, desde, hasta), [movimientos, desde, hasta]);
   const maxBucket = Math.max(...buckets.map((b) => Math.max(b.ingresos, b.egresos)), 1);
+
+  const porMedio = useMemo(() => agruparPorMedio(movimientos), [movimientos]);
+  const totalPorMedio = Math.max(porMedio.reduce((total, m) => total + m.total, 0), 1);
 
   const empresasVisibles = useMemo(() => {
     const filas = agruparPorEmpresa(movimientos);
@@ -315,6 +336,39 @@ export function ReportesAdminGeneral({ empresas, movimientos, empresaId, desde, 
       <div className="mb-[18px] grid grid-cols-2 gap-[18px] max-[1100px]:grid-cols-1">
         <CategoriaCard titulo="Top ingresos por categoría" filas={categoriasIngreso} max={maxCategoriaIngreso} color={INGRESO} />
         <CategoriaCard titulo="Top egresos por categoría" filas={categoriasEgreso} max={maxCategoriaEgreso} color={EGRESO} />
+      </div>
+
+      <div className="mb-[18px] rounded-[22px] bg-card p-[22px]">
+        <h3 className="mb-[18px] text-lg font-bold">Ventas por medio de pago</h3>
+        {porMedio.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">Sin movimientos en este rango.</p>
+        ) : (
+          <div className="flex flex-col gap-3.5">
+            {porMedio.map((fila) => {
+              const pct = Math.max(4, Math.round((fila.total / totalPorMedio) * 100));
+              const colorFila = fila.medio === "efectivo" ? "#8a9099" : fila.medio === "tarjeta" ? "#7c3aed" : "#0891b2";
+
+              return (
+                <div key={fila.nombre} className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: colorConAlpha(colorFila, 0.12), color: colorFila }}>
+                    {obtenerIniciales(fila.nombre)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2 text-[13px] font-semibold">
+                      <span className="truncate">{fila.nombre}</span>
+                      <span className="shrink-0 font-mono" style={{ color: colorFila }}>
+                        S/ {parteMonto(fila.total)}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: colorFila }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-[20px] bg-card shadow-[0_10px_30px_rgba(0,0,0,0.06)]">

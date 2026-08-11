@@ -78,6 +78,9 @@ export function CardMovimientosSemana({ movimientos, urlsComprobantes }: { movim
                         <Icono className="h-4 w-4" />
                       </span>
                       <span className="truncate">{nombre}</span>
+                      {mov.medio !== "efectivo" && (
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold whitespace-nowrap text-muted-foreground uppercase">{mov.medioPagoNombre}</span>
+                      )}
                     </div>
                   </td>
                   <td className="border-b border-border p-2 text-[13px] text-muted-foreground">

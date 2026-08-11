@@ -11,7 +11,7 @@ import { SheetRegistrarMovimiento } from "@/components/pwa/cajas/sheet-registrar
 import { SheetAbrirCerrarCaja } from "@/components/pwa/cajas/sheet-abrir-cerrar-caja";
 import { SheetDetalleMovimiento, type PrefillMovimiento } from "@/components/pwa/cajas/sheet-detalle-movimiento";
 import { useNavegarConTransicion } from "@/components/pwa/view-transitions";
-import type { CajaEmpresaDetalle, FlujoDia, MovimientoReciente, SesionDia, CategoriaOpcion } from "@/lib/consultas";
+import type { CajaEmpresaDetalle, EsperadoMedioSesion, FlujoDia, MedioPagoOpcion, MovimientoReciente, SesionDia, CategoriaOpcion } from "@/lib/consultas";
 
 type Props = {
   caja: CajaEmpresaDetalle;
@@ -20,6 +20,8 @@ type Props = {
   sesionesSemana: SesionDia[];
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
+  mediosPago: MedioPagoOpcion[];
+  esperadosPorMedio: EsperadoMedioSesion[];
   // Si viene, el header muestra "Hola, {nombre}" + buscar en vez del botón
   // volver (vista de admin_empresa, que no tiene una lista de cajas a la que volver).
   nombreUsuario?: string;
@@ -27,7 +29,7 @@ type Props = {
 
 const COLOR_POR_DEFECTO = "#006d36";
 
-export function CajaDetalle({ caja, flujoSemanal, movimientos, sesionesSemana, categoriasIngreso, categoriasEgreso, nombreUsuario }: Props) {
+export function CajaDetalle({ caja, flujoSemanal, movimientos, sesionesSemana, categoriasIngreso, categoriasEgreso, mediosPago, esperadosPorMedio, nombreUsuario }: Props) {
   const navegar = useNavegarConTransicion();
   const color = caja.color ?? COLOR_POR_DEFECTO;
   const maxActividad = Math.max(...flujoSemanal.map((dia) => dia.ingresos + dia.egresos), 0);
@@ -142,9 +144,23 @@ export function CajaDetalle({ caja, flujoSemanal, movimientos, sesionesSemana, c
           <span className="text-center text-[10px] leading-tight font-bold text-gray-500">Historial</span>
         </div>
 
-        <SheetAbrirCerrarCaja cajaId={caja.cajaId} sesionAbiertaId={caja.sesionAbiertaId} abierta={caja.abierta} montoReferencia={caja.saldo} color={color} />
+        <SheetAbrirCerrarCaja
+          cajaId={caja.cajaId}
+          sesionAbiertaId={caja.sesionAbiertaId}
+          abierta={caja.abierta}
+          montoReferencia={caja.saldo}
+          esperadosPorMedio={esperadosPorMedio}
+          color={color}
+        />
 
-        <SheetRegistrarMovimiento cajaId={caja.cajaId} categoriasIngreso={categoriasIngreso} categoriasEgreso={categoriasEgreso} deshabilitado={!caja.abierta} prefill={prefillMovimiento} />
+        <SheetRegistrarMovimiento
+          cajaId={caja.cajaId}
+          categoriasIngreso={categoriasIngreso}
+          categoriasEgreso={categoriasEgreso}
+          mediosPago={mediosPago}
+          deshabilitado={!caja.abierta}
+          prefill={prefillMovimiento}
+        />
       </section>
 
       <section className="flex flex-col gap-6 px-8 pb-8">

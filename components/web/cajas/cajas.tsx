@@ -97,7 +97,7 @@ export function CajasAdminGeneral({ cajasEmpresas, sesionesCerradas, estadoFiltr
           return (
             <Link
               key={caja.empresaId}
-              href={`/panel/cajas/${caja.empresaId}`}
+              href={`/panel/cajas/${caja.empresaSlug}`}
               className="animate-in fade-in slide-in-from-bottom-2 rounded-[22px] bg-card p-[22px] duration-500 ease-out transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(0,0,0,0.08)] motion-reduce:animate-none"
             >
               <div className="mb-4 flex items-center gap-3.5">

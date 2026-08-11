@@ -16,6 +16,18 @@ type Props = {
 // como children — así no viaja como JS al navegador.
 export function SelectorVistaCaja({ mostrarVolver, haySesionActual, vistaSesion, vistaSemana }: Props) {
   const [vista, setVista] = useState<"sesion" | "semana">(haySesionActual ? "sesion" : "semana");
+  const [haySesionAnterior, setHaySesionAnterior] = useState(haySesionActual);
+
+  // Con la caja cerrada la vista por defecto es "Semana" (no hay sesión que
+  // mostrar). Si se abre la caja mientras estamos parados acá (sheet Abrir
+  // caja + router.refresh), haySesionActual pasa de false a true pero este
+  // componente no se remonta —así que sin esto se quedaría en "Semana"
+  // mostrando una sesión que ya existe. Saltamos a "Sesión actual" apenas
+  // se detecta ese cambio.
+  if (haySesionActual !== haySesionAnterior) {
+    setHaySesionAnterior(haySesionActual);
+    if (haySesionActual) setVista("sesion");
+  }
 
   return (
     <>

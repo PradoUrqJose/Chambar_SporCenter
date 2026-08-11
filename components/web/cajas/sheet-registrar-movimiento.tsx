@@ -8,10 +8,11 @@ import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { obtenerIcono } from "@/lib/iconos";
-import type { CategoriaOpcion } from "@/lib/consultas";
+import type { CategoriaOpcion, MedioPagoOpcion } from "@/lib/consultas";
 import { ahoraLimaDatetimeLocal, datetimeLocalAIsoLima } from "@/lib/formato";
 
 type Modo = "ingreso" | "egreso";
+type MedioPago = "efectivo" | "tarjeta" | "transferencia";
 
 type Props = {
   cajaId: string;
@@ -19,6 +20,7 @@ type Props = {
   modoInicial: Modo;
   categoriasIngreso: CategoriaOpcion[];
   categoriasEgreso: CategoriaOpcion[];
+  mediosPago: MedioPagoOpcion[];
   onOpenChange: (abierto: boolean) => void;
   // Solo admin_general/admin_organizacion pueden elegir una fecha pasada
   // (para cargar historial); el resto siempre usa la fecha/hora actual.
@@ -28,13 +30,31 @@ type Props = {
 const INGRESO = "#1f7a4d";
 const EGRESO = "#dc2626";
 
-export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categoriasIngreso, categoriasEgreso, onOpenChange, esAdmin = false }: Props) {
+const MEDIOS: { valor: MedioPago; label: string }[] = [
+  { valor: "efectivo", label: "Efectivo" },
+  { valor: "tarjeta", label: "Tarjeta" },
+  { valor: "transferencia", label: "Transferencia" },
+];
+
+export function SheetRegistrarMovimiento({
+  cajaId,
+  abierto,
+  modoInicial,
+  categoriasIngreso,
+  categoriasEgreso,
+  mediosPago,
+  onOpenChange,
+  esAdmin = false,
+}: Props) {
   const [modo, setModo] = useState<Modo>(modoInicial);
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
   const [monto, setMonto] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [comprobante, setComprobante] = useState<File | null>(null);
   const [fecha, setFecha] = useState(ahoraLimaDatetimeLocal());
+  const [medio, setMedio] = useState<MedioPago>("efectivo");
+  const [medioPagoId, setMedioPagoId] = useState<string | null>(null);
+  const [referencia, setReferencia] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [abiertoAnterior, setAbiertoAnterior] = useState(abierto);
   const router = useRouter();
@@ -48,7 +68,17 @@ export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categor
       setDescripcion("");
       setComprobante(null);
       setFecha(ahoraLimaDatetimeLocal());
+      setMedio("efectivo");
+      setMedioPagoId(null);
+      setReferencia("");
     }
+  }
+
+  const mediosPagoDelTipo = mediosPago.filter((m) => m.tipo === medio);
+
+  function cambiarMedio(nuevoMedio: MedioPago) {
+    setMedio(nuevoMedio);
+    setMedioPagoId(null);
   }
 
   const categoriasPorModo: Record<Modo, CategoriaOpcion[]> = { ingreso: categoriasIngreso, egreso: categoriasEgreso };
@@ -65,6 +95,11 @@ export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categor
 
     if (!categoriaId || !montoNumero || montoNumero <= 0) {
       toast.error("Completa la categoría y un monto válido");
+      return;
+    }
+
+    if (medio !== "efectivo" && !medioPagoId) {
+      toast.error(`Elige ${medio === "tarjeta" ? "una tarjeta" : "un banco"}`);
       return;
     }
 
@@ -89,6 +124,8 @@ export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categor
         p_descripcion: descripcion.trim() || undefined,
         p_comprobante_url: comprobanteUrl ?? undefined,
         p_fecha: esAdmin ? datetimeLocalAIsoLima(fecha) : undefined,
+        p_medio_pago_id: medio === "efectivo" ? undefined : (medioPagoId ?? undefined),
+        p_referencia: medio === "efectivo" ? undefined : referencia.trim() || undefined,
       });
 
       if (error) throw error;
@@ -173,6 +210,60 @@ export function SheetRegistrarMovimiento({ cajaId, abierto, modoInicial, categor
                   })}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-bold text-muted-foreground uppercase">Medio de pago</label>
+              <div className="flex rounded-xl bg-muted p-1">
+                {MEDIOS.map((opcion) => (
+                  <button
+                    key={opcion.valor}
+                    type="button"
+                    onClick={() => cambiarMedio(opcion.valor)}
+                    className="flex-1 rounded-lg py-2 text-xs font-bold text-muted-foreground transition-colors"
+                    style={medio === opcion.valor ? { backgroundColor: "#fff", color: acento, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" } : undefined}
+                  >
+                    {opcion.label}
+                  </button>
+                ))}
+              </div>
+
+              {medio !== "efectivo" && (
+                <div className="mt-3 flex flex-col gap-3">
+                  {mediosPagoDelTipo.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-border bg-muted px-3.5 py-2.5 text-xs text-muted-foreground">
+                      No hay {medio === "tarjeta" ? "tarjetas" : "bancos"} registrados. Pide al administrador general que los cree en Medios de pago.
+                    </p>
+                  ) : (
+                    <Select value={medioPagoId} onValueChange={setMedioPagoId}>
+                      <SelectTrigger className="w-full justify-start gap-3">
+                        <SelectValue placeholder={medio === "tarjeta" ? "Elige una tarjeta" : "Elige un banco"}>
+                          {(valor: string | null) => mediosPagoDelTipo.find((m) => m.id === valor)?.nombre ?? (medio === "tarjeta" ? "Elige una tarjeta" : "Elige un banco")}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mediosPagoDelTipo.map((opcion) => {
+                          const Icono = obtenerIcono(opcion.icono);
+                          return (
+                            <SelectItem key={opcion.id} value={opcion.id}>
+                              <Icono className="h-4 w-4 shrink-0" />
+                              {opcion.nombre}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  <input
+                    type="text"
+                    value={referencia}
+                    onChange={(evento) => setReferencia(evento.target.value)}
+                    placeholder="Nº de operación (opcional)"
+                    className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm focus:border-ring focus:bg-card focus:outline-none"
+                  />
+                </div>
+              )}
             </div>
 
             <div>

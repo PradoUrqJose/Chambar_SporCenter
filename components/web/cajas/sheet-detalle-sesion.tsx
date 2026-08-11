@@ -89,7 +89,8 @@ export function SheetDetalleSesion({ sesion, urlsComprobantes }: Props) {
                   )}
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 border-t border-white/15 pt-4">
+                <p className="text-[11px] font-bold text-white/50 uppercase">Efectivo</p>
+                <div className="grid grid-cols-3 gap-3 border-t border-white/15 pt-2">
                   {[
                     { label: "Apertura", valor: sesion.montoApertura },
                     { label: "Esperado", valor: sesion.montoEsperado ?? 0 },
@@ -137,6 +138,39 @@ export function SheetDetalleSesion({ sesion, urlsComprobantes }: Props) {
                 </div>
               )}
 
+              {sesion.arqueosMedios.length > 0 && (
+                <div>
+                  <h3 className="mb-3 text-[15px] font-bold">Arqueo por medio</h3>
+                  <div className="flex flex-col gap-2">
+                    {sesion.arqueosMedios.map((arqueo) => {
+                      const Icono = obtenerIcono(arqueo.icono);
+                      const colorMedio = arqueo.color ?? "#7c3aed";
+                      const cuadradoMedio = Math.abs(arqueo.diferencia) < 0.005;
+
+                      return (
+                        <div key={arqueo.medioPagoId} className="flex items-center gap-3 rounded-2xl border border-border px-4 py-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: colorConAlpha(colorMedio, 0.12), color: colorMedio }}>
+                            <Icono className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[14px] font-semibold">{arqueo.nombre}</p>
+                            <p className="text-[12px] text-muted-foreground">
+                              Esperado {parteMonto(arqueo.montoEsperado)} · Contado {parteMonto(arqueo.montoContado)}
+                            </p>
+                          </div>
+                          <span
+                            className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase"
+                            style={{ backgroundColor: cuadradoMedio ? "#e6f4ec" : arqueo.diferencia < 0 ? "#fde8e8" : "#fef3e2", color: cuadradoMedio ? "#1f7a4d" : arqueo.diferencia < 0 ? "#E7000B" : "#d97706" }}
+                          >
+                            {cuadradoMedio ? "Cuadrada" : arqueo.diferencia < 0 ? "Faltante" : "Sobrante"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <h3 className="mb-3 text-[15px] font-bold">Movimientos</h3>
 
@@ -164,7 +198,10 @@ export function SheetDetalleSesion({ sesion, urlsComprobantes }: Props) {
 
                         <div className="min-w-0 flex-1">
                           <p className={`truncate text-[14px] font-semibold ${movimiento.anulado ? "text-muted-foreground line-through" : ""}`}>{nombre}</p>
-                          <p className="text-[12px] text-muted-foreground">{formatearHora(movimiento.fecha)}</p>
+                          <p className="text-[12px] text-muted-foreground">
+                            {formatearHora(movimiento.fecha)}
+                            {movimiento.medio !== "efectivo" && ` · ${movimiento.medioPagoNombre}`}
+                          </p>
                           {movimiento.anulado && (
                             <p className="mt-1 flex items-center gap-1 text-[12px] font-medium text-[#E7000B]">
                               <BanIcon className="h-3 w-3 shrink-0" />

@@ -4,8 +4,11 @@ import {
   fechaLima,
   obtenerCajaEmpresa,
   obtenerCategoriasPorTipo,
-  obtenerEmpresaAsignada,
+  obtenerEmpresaAsignadaSlug,
+  obtenerEmpresaIdPorSlug,
+  obtenerEsperadosPorMedioSesion,
   obtenerFlujoSemanal,
+  obtenerMediosPagoActivos,
   obtenerMovimientosSemana,
   obtenerSesionDetalle,
   obtenerSesionesSemana,
@@ -17,11 +20,11 @@ import { CajaDetalle } from "@/components/web/cajas/caja-detalle";
 import { PlaceholderPanel } from "@/components/web/placeholder-panel";
 
 type Props = {
-  params: Promise<{ empresaId: string }>;
+  params: Promise<{ empresaSlug: string }>;
 };
 
 export default async function CajaEmpresaPanelPage({ params }: Props) {
-  const { empresaId } = await params;
+  const { empresaSlug } = await params;
   const perfil = await obtenerPerfilActual();
 
   // admin_general y admin_organizacion ven/administran cualquier caja
@@ -33,28 +36,33 @@ export default async function CajaEmpresaPanelPage({ params }: Props) {
     return <PlaceholderPanel titulo="Caja" descripcion="Acá va el detalle de la caja." />;
   }
 
-  // Antes: obtenerCajaEmpresa se esperaba solo, y recién después arrancaban
-  // categorías (que no dependen de la caja) — un viaje de red desperdiciado.
-  // Ahora todo lo que no depende de resolver la caja va en el mismo Promise.all.
-  const [empresaAsignada, caja, categoriasIngreso, categoriasEgreso] = await Promise.all([
-    esAdminEmpresa ? obtenerEmpresaAsignada(perfil.id) : Promise.resolve(null),
-    obtenerCajaEmpresa(empresaId),
+  // El slug de la URL solo sirve para resolver el empresaId real; todo lo
+  // que sigue (obtenerCajaEmpresa y lo que depende de ella) sigue andando
+  // con el UUID de siempre. Lo que no depende de ese id va en paralelo.
+  const [empresaAsignadaSlug, empresaId, categoriasIngreso, categoriasEgreso, mediosPago] = await Promise.all([
+    esAdminEmpresa ? obtenerEmpresaAsignadaSlug(perfil.id) : Promise.resolve(null),
+    obtenerEmpresaIdPorSlug(empresaSlug),
     obtenerCategoriasPorTipo("ingreso"),
     obtenerCategoriasPorTipo("egreso"),
+    obtenerMediosPagoActivos(),
   ]);
 
   // admin_empresa (rol_global null) solo puede ver la caja de su propia
-  // empresa — si el empresaId de la URL no es la suya, 404 (nunca redirigir
-  // ni filtrar datos de otra empresa).
-  if (esAdminEmpresa && empresaAsignada !== empresaId) notFound();
+  // empresa — si el slug de la URL no es el suyo, 404 (nunca redirigir ni
+  // filtrar datos de otra empresa).
+  if (esAdminEmpresa && empresaAsignadaSlug !== empresaSlug) notFound();
+  if (!empresaId) notFound();
+
+  const caja = await obtenerCajaEmpresa(empresaId);
   if (!caja) notFound();
 
-  const [flujoSemanal, movimientos, sesionesSemana, sesionActual, stands] = await Promise.all([
+  const [flujoSemanal, movimientos, sesionesSemana, sesionActual, stands, esperadosPorMedio] = await Promise.all([
     obtenerFlujoSemanal(caja.cajaId),
     obtenerMovimientosSemana(caja.cajaId),
     obtenerSesionesSemana(caja.cajaId),
     caja.sesionAbiertaId ? obtenerSesionDetalle(caja.sesionAbiertaId) : Promise.resolve(null),
-    obtenerStandsActivos(empresaId),
+    obtenerStandsActivos(caja.empresaId),
+    caja.sesionAbiertaId ? obtenerEsperadosPorMedioSesion(caja.sesionAbiertaId) : Promise.resolve([]),
   ]);
 
   const rutasComprobantes = [...movimientos, ...(sesionActual?.movimientos ?? [])].map((mov) => mov.comprobanteUrl).filter((ruta): ruta is string => ruta !== null);
@@ -71,6 +79,8 @@ export default async function CajaEmpresaPanelPage({ params }: Props) {
       urlsComprobantes={urlsComprobantes}
       categoriasIngreso={categoriasIngreso}
       categoriasEgreso={categoriasEgreso}
+      mediosPago={mediosPago}
+      esperadosPorMedio={esperadosPorMedio}
       stands={stands}
       mostrarVolver={!esAdminEmpresa}
       esAdmin={puedeVerCualquierCaja}

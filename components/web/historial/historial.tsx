@@ -122,7 +122,13 @@ export function HistorialAdminGeneral({ cajasFiltro, sesiones, resumen, cajaId, 
             {sesiones.map((sesion) => {
               const color = sesion.cajaColor ?? COLOR_POR_DEFECTO;
               const monto = formatearMontoPartes(sesion.montoContado);
-              const sello = obtenerEstadoArqueo(sesion.diferencia);
+              // El efectivo puede cuadrar perfecto y aun así la sesión estar
+              // descuadrada por tarjeta/transferencia: el sello de "Cuadrada"
+              // no puede depender solo de sesion.diferencia (que es efectivo).
+              const sello =
+                sesion.diferencia === 0 && sesion.hayDescuadreMedios
+                  ? { label: "Descuadre" as const, color: "#d97706" }
+                  : obtenerEstadoArqueo(sesion.diferencia);
 
               return (
                 <FilaHistorial key={sesion.id} href={hrefSesion(sesion.id)}>
